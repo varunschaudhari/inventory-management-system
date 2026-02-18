@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory Management System</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Sidebar Navigation -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h2><i class="fas fa-boxes"></i> Inventory</h2>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="#" class="nav-item active" data-page="dashboard">
+                <i class="fas fa-home"></i> <span>Dashboard</span>
+            </a>
+            <a href="#" class="nav-item" data-page="products">
+                <i class="fas fa-box"></i> <span>Products</span>
+            </a>
+            <a href="#" class="nav-item" data-page="customers">
+                <i class="fas fa-users"></i> <span>Customers</span>
+            </a>
+            <a href="#" class="nav-item" data-page="invoices">
+                <i class="fas fa-file-invoice"></i> <span>Invoices</span>
+            </a>
+            <a href="#" class="nav-item" data-page="new-invoice">
+                <i class="fas fa-plus-circle"></i> <span>New Invoice</span>
+            </a>
+            <a href="#" class="nav-item" data-page="settings">
+                <i class="fas fa-cog"></i> <span>Settings</span>
+            </a>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Top Bar -->
+        <header class="top-bar">
+            <button class="menu-toggle" id="menuToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+            <h1 id="pageTitle">Dashboard</h1>
+            <div class="user-info">
+                <span><i class="fas fa-user-circle"></i> Admin</span>
+            </div>
+        </header>
+
+        <!-- Page Content -->
+        <div class="content-area" id="contentArea">
+            <!-- Dashboard Page -->
+            <div class="page" id="dashboard-page">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon blue">
+                            <i class="fas fa-box"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="stat-products">0</h3>
+                            <p>Total Products</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon orange">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="stat-low-stock">0</h3>
+                            <p>Low Stock Items</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon green">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="stat-customers">0</h3>
+                            <p>Total Customers</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon purple">
+                            <i class="fas fa-file-invoice"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="stat-invoices">0</h3>
+                            <p>Total Invoices</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon teal">
+                            <i class="fas fa-rupee-sign"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="stat-revenue">₹0</h3>
+                            <p>Total Revenue</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon red">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="stat-pending">0</h3>
+                            <p>Pending Invoices</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-grid">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>Recent Invoices</h3>
+                            <a href="#" class="view-all" data-page="invoices">View All</a>
+                        </div>
+                        <div class="card-body">
+                            <div id="recent-invoices-list"></div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>Low Stock Products</h3>
+                            <a href="#" class="view-all" data-page="products">View All</a>
+                        </div>
+                        <div class="card-body">
+                            <div id="low-stock-list"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Products Page -->
+            <div class="page" id="products-page" style="display: none;">
+                <div class="page-header">
+                    <h2>Products</h2>
+                    <button class="btn btn-primary" onclick="openProductModal()">
+                        <i class="fas fa-plus"></i> Add Product
+                    </button>
+                </div>
+                <div class="filters">
+                    <input type="text" id="product-search" placeholder="Search products..." class="search-input">
+                    <select id="category-filter" class="filter-select">
+                        <option value="">All Categories</option>
+                    </select>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Code</th>
+                                <th>Product Name</th>
+                                <th>Category</th>
+                                <th>Quantity</th>
+                                <th>Unit Price</th>
+                                <th>Stock Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="products-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Customers Page -->
+            <div class="page" id="customers-page" style="display: none;">
+                <div class="page-header">
+                    <h2>Customers</h2>
+                    <button class="btn btn-primary" onclick="openCustomerModal()">
+                        <i class="fas fa-plus"></i> Add Customer
+                    </button>
+                </div>
+                <div class="filters">
+                    <input type="text" id="customer-search" placeholder="Search customers..." class="search-input">
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Phone</th>
+                                <th>Email</th>
+                                <th>City</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="customers-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Invoices Page -->
+            <div class="page" id="invoices-page" style="display: none;">
+                <div class="page-header">
+                    <h2>Invoices</h2>
+                    <button class="btn btn-primary" onclick="navigateToPage('new-invoice')">
+                        <i class="fas fa-plus"></i> New Invoice
+                    </button>
+                </div>
+                <div class="filters">
+                    <input type="text" id="invoice-search" placeholder="Search invoices..." class="search-input">
+                    <select id="invoice-status-filter" class="filter-select">
+                        <option value="">All Status</option>
+                        <option value="pending">Pending</option>
+                        <option value="paid">Paid</option>
+                        <option value="partial">Partial</option>
+                    </select>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Invoice #</th>
+                                <th>Customer</th>
+                                <th>Date</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="invoices-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- New Invoice Page -->
+            <div class="page" id="new-invoice-page" style="display: none;">
+                <div class="page-header">
+                    <h2>Create New Invoice</h2>
+                </div>
+                <div class="invoice-form-container">
+                    <form id="invoice-form" class="invoice-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Customer *</label>
+                                <select id="invoice-customer" class="form-control" required>
+                                    <option value="">Select Customer</option>
+                                </select>
+                                <button type="button" class="btn-link" onclick="openCustomerModal()">+ Add New Customer</button>
+                            </div>
+                            <div class="form-group">
+                                <label>Invoice Date *</label>
+                                <input type="date" id="invoice-date" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Due Date</label>
+                                <input type="date" id="invoice-due-date" class="form-control">
+                            </div>
+                        </div>
+
+                        <div class="invoice-items-section">
+                            <h3>Items</h3>
+                            <div class="invoice-items-header">
+                                <button type="button" class="btn btn-secondary" onclick="addInvoiceItem()">
+                                    <i class="fas fa-plus"></i> Add Item
+                                </button>
+                            </div>
+                            <div class="table-container">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Product</th>
+                                            <th>Quantity</th>
+                                            <th>Unit Price</th>
+                                            <th>Total</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="invoice-items-body"></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="invoice-summary">
+                            <div class="summary-row">
+                                <label>Subtotal:</label>
+                                <span id="invoice-subtotal">₹0.00</span>
+                            </div>
+                            <div class="summary-row">
+                                <label>Tax Rate (%):</label>
+                                <input type="number" id="invoice-tax-rate" class="form-control inline-input" value="18" step="0.01" onchange="calculateInvoiceTotal()">
+                            </div>
+                            <div class="summary-row">
+                                <label>Tax Amount:</label>
+                                <span id="invoice-tax-amount">₹0.00</span>
+                            </div>
+                            <div class="summary-row">
+                                <label>Discount:</label>
+                                <input type="number" id="invoice-discount" class="form-control inline-input" value="0" step="0.01" onchange="calculateInvoiceTotal()">
+                            </div>
+                            <div class="summary-row total-row">
+                                <label>Total Amount:</label>
+                                <span id="invoice-total">₹0.00</span>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Payment Status</label>
+                            <select id="invoice-payment-status" class="form-control">
+                                <option value="pending">Pending</option>
+                                <option value="paid">Paid</option>
+                                <option value="partial">Partial</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Payment Method</label>
+                            <input type="text" id="invoice-payment-method" class="form-control" placeholder="Cash, UPI, Card, etc.">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Notes</label>
+                            <textarea id="invoice-notes" class="form-control" rows="3"></textarea>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-secondary" onclick="navigateToPage('invoices')">Cancel</button>
+                            <button type="submit" class="btn btn-primary">Create Invoice</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Settings Page -->
+            <div class="page" id="settings-page" style="display: none;">
+                <div class="page-header">
+                    <h2>Settings</h2>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Shop Information</h3>
+                    </div>
+                    <div class="card-body">
+                        <form id="settings-form">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Shop Name *</label>
+                                    <input type="text" id="setting-shop-name" class="form-control" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Phone</label>
+                                    <input type="text" id="setting-shop-phone" class="form-control">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Email</label>
+                                <input type="email" id="setting-shop-email" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label>Address</label>
+                                <textarea id="setting-shop-address" class="form-control" rows="2"></textarea>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>City</label>
+                                    <input type="text" id="setting-shop-city" class="form-control">
+                                </div>
+                                <div class="form-group">
+                                    <label>State</label>
+                                    <input type="text" id="setting-shop-state" class="form-control">
+                                </div>
+                                <div class="form-group">
+                                    <label>Pincode</label>
+                                    <input type="text" id="setting-shop-pincode" class="form-control">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>GSTIN</label>
+                                <input type="text" id="setting-shop-gstin" class="form-control">
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Default Tax Rate (%)</label>
+                                    <input type="number" id="setting-tax-rate" class="form-control" step="0.01">
+                                </div>
+                                <div class="form-group">
+                                    <label>Invoice Prefix</label>
+                                    <input type="text" id="setting-invoice-prefix" class="form-control">
+                                </div>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary">Save Settings</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Product Modal -->
+    <div class="modal" id="productModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="productModalTitle">Add Product</h3>
+                <button class="modal-close" onclick="closeProductModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="product-form">
+                    <input type="hidden" id="product-id">
+                    <div class="form-group">
+                        <label>Product Name *</label>
+                        <input type="text" id="product-name" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Product Code</label>
+                        <input type="text" id="product-code" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label>Category</label>
+                        <input type="text" id="product-category" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label>Description</label>
+                        <textarea id="product-description" class="form-control" rows="3"></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Quantity *</label>
+                            <input type="number" id="product-quantity" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Unit</label>
+                            <input type="text" id="product-unit" class="form-control" value="pcs">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Unit Price (₹) *</label>
+                            <input type="number" id="product-unit-price" class="form-control" step="0.01" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Cost Price (₹)</label>
+                            <input type="number" id="product-cost-price" class="form-control" step="0.01">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Min Stock Level</label>
+                        <input type="number" id="product-min-stock" class="form-control" value="0">
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="closeProductModal()">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Product</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customer Modal -->
+    <div class="modal" id="customerModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="customerModalTitle">Add Customer</h3>
+                <button class="modal-close" onclick="closeCustomerModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="customer-form">
+                    <input type="hidden" id="customer-id">
+                    <div class="form-group">
+                        <label>Customer Name *</label>
+                        <input type="text" id="customer-name" class="form-control" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Phone</label>
+                            <input type="text" id="customer-phone" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" id="customer-email" class="form-control">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Address</label>
+                        <textarea id="customer-address" class="form-control" rows="2"></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>City</label>
+                            <input type="text" id="customer-city" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label>State</label>
+                            <input type="text" id="customer-state" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label>Pincode</label>
+                            <input type="text" id="customer-pincode" class="form-control">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>GSTIN</label>
+                        <input type="text" id="customer-gstin" class="form-control">
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="closeCustomerModal()">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Customer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Invoice View Modal -->
+    <div class="modal modal-large" id="invoiceViewModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Invoice Details</h3>
+                <div class="modal-actions">
+                    <button class="btn btn-secondary" onclick="printInvoice()">
+                        <i class="fas fa-print"></i> Print
+                    </button>
+                    <button class="btn btn-secondary" onclick="downloadInvoice()">
+                        <i class="fas fa-download"></i> Download
+                    </button>
+                    <button class="btn btn-primary" onclick="shareInvoice()">
+                        <i class="fas fa-share"></i> Share
+                    </button>
+                    <button class="modal-close" onclick="closeInvoiceViewModal()">&times;</button>
+                </div>
+            </div>
+            <div class="modal-body" id="invoice-view-content"></div>
+        </div>
+    </div>
+
+    <script src="assets/js/app.js"></script>
+</body>
+</html>

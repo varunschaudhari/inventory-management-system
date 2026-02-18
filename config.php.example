@@ -1,0 +1,20 @@
+<?php
+/**
+ * Database Configuration Example
+ * 
+ * Copy this file to config/database.php and update with your actual credentials
+ */
+
+// Database Configuration
+define('DB_HOST', 'localhost');
+define('DB_USER', 'root');
+define('DB_PASS', '');
+define('DB_NAME', 'inventory_management');
+
+// Timezone
+date_default_timezone_set('Asia/Kolkata');
+
+// Error Reporting (disable in production)
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+?>
