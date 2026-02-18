@@ -37,6 +37,7 @@ requireLogin(); // Redirect to login if not logged in
             align-items: center;
             gap: 5px;
             transition: background 0.3s;
+            text-decoration: none;
         }
         .logout-btn:hover {
             background: #c82333;

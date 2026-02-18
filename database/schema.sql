@@ -79,6 +79,19 @@ CREATE TABLE IF NOT EXISTS invoice_items (
     INDEX idx_product_id (product_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- Users Table (for authentication)
+CREATE TABLE IF NOT EXISTS users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    full_name VARCHAR(100) NOT NULL,
+    email VARCHAR(255),
+    role ENUM('admin', 'staff') DEFAULT 'admin',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_username (username)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- Settings Table (for shop details, GST, etc.)
 CREATE TABLE IF NOT EXISTS settings (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -86,6 +99,12 @@ CREATE TABLE IF NOT EXISTS settings (
     setting_value TEXT,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Insert default admin user (password: admin123)
+-- ⚠️ IMPORTANT: Change this password immediately after first login!
+INSERT INTO users (username, password, full_name, email, role) VALUES 
+('admin', '$2y$12$hA6AUy8k6D2iQCMXbmgQY.0o/DTj.KxlSNSHjDorE6Oj3Ax2kUOQy', 'Administrator', 'admin@example.com', 'admin')
+ON DUPLICATE KEY UPDATE password = VALUES(password);
 
 -- Insert default settings
 INSERT INTO settings (setting_key, setting_value) VALUES

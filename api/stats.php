@@ -1,6 +1,14 @@
 <?php
 header('Content-Type: application/json');
 require_once '../config/database.php';
+require_once '../config/auth.php';
+
+// Check authentication
+if (!isLoggedIn()) {
+    http_response_code(401);
+    echo json_encode(['error' => 'Unauthorized. Please login.']);
+    exit;
+}
 
 $conn = getDBConnection();
 
