@@ -10,6 +10,14 @@ let customers = [];
 // Initialize App
 document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
+    // Test html2pdf.js loading
+    setTimeout(() => {
+        if (typeof html2pdf !== 'undefined') {
+            console.log('✓ html2pdf.js loaded successfully');
+        } else {
+            console.error('✗ html2pdf.js NOT loaded! Check script tag in HTML.');
+        }
+    }, 1000);
 });
 
 function initializeApp() {
@@ -769,19 +777,10 @@ async function handleInvoiceSubmit(e) {
     }
 }
 
-// View Invoice
-async function viewInvoice(id) {
-    try {
-        const response = await fetch(`${API_BASE}/invoices.php?id=${id}`);
-        const invoice = await response.json();
-        
-        currentInvoiceId = id;
-        displayInvoiceView(invoice);
-        document.getElementById('invoiceViewModal').classList.add('active');
-    } catch (error) {
-        console.error('Error loading invoice:', error);
-        showNotification('Error loading invoice', 'error');
-    }
+// View Invoice - Opens in new tab
+function viewInvoice(id) {
+    // Open invoice preview in a new tab
+    window.open(`invoice-preview.php?id=${id}`, '_blank');
 }
 
 function displayInvoiceView(invoice) {
@@ -793,54 +792,90 @@ function displayInvoiceView(invoice) {
         .then(settings => {
             const itemsHtml = invoice.items.map(item => `
                 <tr>
-                    <td>${item.product_name}</td>
-                    <td>${item.quantity}</td>
-                    <td>${formatCurrency(item.unit_price)}</td>
-                    <td>${formatCurrency(item.total_price)}</td>
+                    <td class="col-item"><strong>${item.product_name}</strong></td>
+                    <td class="col-description">${item.product_description || '-'}</td>
+                    <td class="col-price">${formatCurrency(item.unit_price)}</td>
+                    <td class="col-qty">${item.quantity}</td>
+                    <td class="col-total"><strong>${formatCurrency(item.total_price)}</strong></td>
                 </tr>
             `).join('');
             
             container.innerHTML = `
                 <div class="invoice-view">
-                    <div class="invoice-header">
-                        <div class="invoice-shop-info">
-                            <h2>${settings.shop_name || 'My Shop'}</h2>
-                            <p>${settings.shop_address || ''}</p>
-                            <p>${settings.shop_city || ''}${settings.shop_state ? ', ' + settings.shop_state : ''} ${settings.shop_pincode || ''}</p>
-                            <p>Phone: ${settings.shop_phone || ''}</p>
-                            ${settings.shop_gstin ? `<p>GSTIN: ${settings.shop_gstin}</p>` : ''}
+                    <!-- Header Section -->
+                    <div class="invoice-header-new">
+                        <div class="header-left">
+                            <div class="company-logo">
+                                <div class="logo-placeholder">${(settings.shop_name || 'SHOP').charAt(0).toUpperCase()}</div>
+                                <h1 class="company-name">${settings.shop_name || 'My Shop'}</h1>
+                            </div>
+                            <div class="invoice-meta">
+                                <p><strong>Invoice No:</strong> ${invoice.invoice_number}</p>
+                                <p><strong>Invoice Date:</strong> ${formatDate(invoice.invoice_date)}</p>
+                            </div>
                         </div>
-                        <div class="invoice-number">
-                            <h3>INVOICE</h3>
-                            <p><strong>Invoice #:</strong> ${invoice.invoice_number}</p>
-                            <p><strong>Date:</strong> ${formatDate(invoice.invoice_date)}</p>
-                            ${invoice.due_date ? `<p><strong>Due Date:</strong> ${formatDate(invoice.due_date)}</p>` : ''}
+                        <div class="header-right">
+                            <div class="contact-blocks">
+                                <div class="contact-block">
+                                    <i class="fas fa-envelope"></i>
+                                    <div>
+                                        <p>${settings.shop_email || 'email@example.com'}</p>
+                                        ${settings.shop_email_secondary ? `<p>${settings.shop_email_secondary}</p>` : ''}
+                                    </div>
+                                </div>
+                                <div class="contact-block">
+                                    <i class="fas fa-phone"></i>
+                                    <div>
+                                        <p>${settings.shop_phone || '+91-000-000-0000'}</p>
+                                        <p>Monday to Friday</p>
+                                    </div>
+                                </div>
+                                <div class="contact-block">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                    <div>
+                                        <p>${settings.shop_address || 'Address'}</p>
+                                        <p>${[settings.shop_city, settings.shop_state, settings.shop_pincode].filter(Boolean).join(', ')}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="total-parallelogram">
+                                <p class="total-label">Total</p>
+                                <p class="total-amount">${formatCurrency(invoice.total_amount)}</p>
+                            </div>
                         </div>
                     </div>
                     
-                    <div class="invoice-details">
-                        <div class="invoice-bill-to">
-                            <h4>Bill To:</h4>
-                            <p><strong>${invoice.customer_name || 'Walk-in Customer'}</strong></p>
-                            ${invoice.address ? `<p>${invoice.address}</p>` : ''}
-                            ${invoice.city ? `<p>${invoice.city}${invoice.state ? ', ' + invoice.state : ''} ${invoice.pincode || ''}</p>` : ''}
-                            ${invoice.phone ? `<p>Phone: ${invoice.phone}</p>` : ''}
-                            ${invoice.gstin ? `<p>GSTIN: ${invoice.gstin}</p>` : ''}
-                        </div>
-                        <div class="invoice-info">
-                            <h4>Payment Information:</h4>
-                            <p><strong>Status:</strong> <span class="badge ${getStatusBadgeClass(invoice.payment_status)}">${invoice.payment_status}</span></p>
-                            ${invoice.payment_method ? `<p><strong>Method:</strong> ${invoice.payment_method}</p>` : ''}
+                    <!-- Invoice To Section -->
+                    <div class="invoice-to-section">
+                        <div class="invoice-to-banner">Invoice To</div>
+                        <div class="invoice-to-content">
+                            <div class="invoice-to-left">
+                                <p><strong>Name:</strong> ${invoice.customer_name || 'Walk-in Customer'}</p>
+                                <p><strong>Email:</strong> ${invoice.email || '-'}</p>
+                            </div>
+                            <div class="invoice-to-right">
+                                <p><strong>Phone:</strong> ${invoice.phone || '-'}</p>
+                                <p><strong>Address:</strong> ${invoice.address ? invoice.address + ', ' : ''}${[invoice.city, invoice.state, invoice.pincode].filter(Boolean).join(', ') || '-'}</p>
+                            </div>
                         </div>
                     </div>
                     
-                    <table class="invoice-items-table">
+                    <!-- Items Table -->
+                    <table class="invoice-items-table-new">
+                        <colgroup>
+                            <col class="col-item">
+                            <col class="col-description">
+                            <col class="col-price">
+                            <col class="col-qty">
+                            <col class="col-total">
+                        </colgroup>
                         <thead>
                             <tr>
-                                <th>Product</th>
-                                <th>Quantity</th>
-                                <th>Unit Price</th>
-                                <th>Total</th>
+                                <th class="col-item">Item</th>
+                                <th class="col-description">Description</th>
+                                <th class="col-price">Price</th>
+                                <th class="col-qty">Qty</th>
+                                <th class="col-total">Total</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -848,39 +883,54 @@ function displayInvoiceView(invoice) {
                         </tbody>
                     </table>
                     
-                    <div class="invoice-totals">
-                        <table>
-                            <tr>
-                                <td>Subtotal:</td>
-                                <td>${formatCurrency(invoice.subtotal)}</td>
-                            </tr>
-                            ${invoice.tax_rate > 0 ? `
-                            <tr>
-                                <td>Tax (${invoice.tax_rate}%):</td>
-                                <td>${formatCurrency(invoice.tax_amount)}</td>
-                            </tr>
-                            ` : ''}
-                            ${invoice.discount > 0 ? `
-                            <tr>
-                                <td>Discount:</td>
-                                <td>-${formatCurrency(invoice.discount)}</td>
-                            </tr>
-                            ` : ''}
-                            <tr class="total-row">
-                                <td><strong>Total:</strong></td>
-                                <td><strong>${formatCurrency(invoice.total_amount)}</strong></td>
-                            </tr>
-                        </table>
+                    <!-- Bottom Section: Summary and Payment Info -->
+                    <div class="invoice-bottom-section">
+                        <div class="payment-info-section">
+                            <h4>PAYMENT INFO:</h4>
+                            <div class="payment-details">
+                                <p class="payment-customer"><strong>Customer:</strong> ${invoice.customer_name || 'Walk-in Customer'}</p>
+                                <p class="payment-method"><strong>Payment Method:</strong> ${invoice.payment_method || 'Cash'}</p>
+                                <p class="payment-amount"><strong>Amount:</strong> ${formatCurrency(invoice.total_amount)}</p>
+                            </div>
+                        </div>
+                        <div class="summary-section">
+                            <table class="summary-table">
+                                <tr>
+                                    <td>Subtotal:</td>
+                                    <td>${formatCurrency(invoice.subtotal)}</td>
+                                </tr>
+                                ${invoice.discount > 0 ? `
+                                <tr class="discount-row">
+                                    <td>Discount ${invoice.discount_percent || ''}%:</td>
+                                    <td>-${formatCurrency(invoice.discount)}</td>
+                                </tr>
+                                ` : ''}
+                                ${invoice.tax_rate > 0 ? `
+                                <tr>
+                                    <td>Tax ${invoice.tax_rate}%:</td>
+                                    <td>+${formatCurrency(invoice.tax_amount)}</td>
+                                </tr>
+                                ` : '<tr><td>Tax 0%:</td><td>+$0</td></tr>'}
+                                <tr class="grand-total-row">
+                                    <td><strong>Grand Total:</strong></td>
+                                    <td><strong>${formatCurrency(invoice.total_amount)}</strong></td>
+                                </tr>
+                            </table>
+                        </div>
                     </div>
                     
-                    ${invoice.notes ? `
-                    <div class="invoice-footer">
-                        <p><strong>Notes:</strong> ${invoice.notes}</p>
-                    </div>
-                    ` : ''}
-                    
-                    <div class="invoice-footer">
-                        <p>Thank you for your business!</p>
+                    <!-- Footer Section -->
+                    <div class="invoice-footer-new">
+                        <div class="footer-left">
+                            <p class="thank-you">Thank you for your business!</p>
+                            <p class="terms">We appreciate your trust and look forward to serving you again.</p>
+                        </div>
+                        <div class="footer-right">
+                            <div class="signature-section">
+                                <p class="signature-label">Authorized Signature</p>
+                                <p class="signature-name">${settings.shop_name || 'Shop Owner'}</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             `;
@@ -897,27 +947,974 @@ function printInvoice() {
 }
 
 function downloadInvoice() {
-    const content = document.getElementById('invoice-view-content').innerHTML;
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Invoice</title>
-            <style>
-                body { font-family: Arial, sans-serif; padding: 2rem; }
-                .invoice-view { max-width: 800px; margin: 0 auto; }
-                ${document.querySelector('style')?.textContent || ''}
-            </style>
-        </head>
-        <body>
-            ${content}
-        </body>
-        </html>
-    `);
-    printWindow.document.close();
-    printWindow.print();
+    console.log('=== PDF GENERATION DEBUG START ===');
+    console.log('downloadInvoice() function called at:', new Date().toISOString());
+    
+    // Step 1: Check if element exists
+    const element = document.getElementById('invoice-view-content');
+    console.log('Step 1 - Element check:', {
+        element: element,
+        exists: !!element,
+        innerHTML: element ? element.innerHTML.substring(0, 100) + '...' : 'N/A',
+        offsetWidth: element ? element.offsetWidth : 0,
+        offsetHeight: element ? element.offsetHeight : 0,
+        scrollWidth: element ? element.scrollWidth : 0,
+        scrollHeight: element ? element.scrollHeight : 0,
+        computedStyle: element ? window.getComputedStyle(element).display : 'N/A'
+    });
+    
+    if (!element) {
+        console.error('ERROR: invoice-view-content element not found!');
+        showNotification('Invoice content not found. Please view an invoice first.', 'error');
+        return;
+    }
+
+    if (!element.innerHTML || element.innerHTML.trim().length === 0) {
+        console.error('ERROR: invoice-view-content element is empty!');
+        showNotification('Invoice content is empty. Please view an invoice first.', 'error');
+        return;
+    }
+
+    // Step 2: Check if html2pdf.js is loaded
+    console.log('Step 2 - html2pdf.js check:', {
+        html2pdf: typeof html2pdf,
+        isDefined: typeof html2pdf !== 'undefined',
+        html2pdfObject: typeof html2pdf !== 'undefined' ? html2pdf : 'NOT LOADED'
+    });
+    
+    if (typeof html2pdf === 'undefined') {
+        console.error('ERROR: html2pdf.js is not loaded!');
+        console.error('Check Network tab for script loading errors');
+        console.error('Expected: https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js');
+        showNotification('PDF library not loaded. Please refresh the page and check your internet connection.', 'error');
+        return;
+    }
+
+    // Step 3: Note about dependencies (they're bundled, don't need to be global)
+    console.log('Step 3 - Dependencies note:', {
+        note: 'html2canvas and jsPDF are bundled inside html2pdf.js',
+        explanation: 'They don\'t need to be global variables - this is normal!',
+        html2canvas: typeof html2canvas,
+        jsPDF: typeof jsPDF
+    });
+
+    // Step 4: Get invoice number
+    const invoiceNumber = document.querySelector('.invoice-meta p')?.textContent?.match(/INV-[0-9]+/)?.[0] || 
+                          document.querySelector('.invoice-number p')?.textContent?.match(/INV-[0-9]+/)?.[0] || 
+                          'Invoice';
+    const filename = `Invoice_${invoiceNumber}.pdf`;
+    console.log('Step 4 - Filename:', filename);
+
+    // Step 5: Show loading notification
+    showNotification('Generating PDF with html2pdf.js... This may take a moment.', 'info');
+    console.log('Step 5 - Notification shown, waiting 500ms before starting conversion...');
+
+    // Step 6: Wait for DOM to be ready and ensure element is visible
+    setTimeout(() => {
+        console.log('Step 5 - Starting PDF generation after delay');
+        
+        // Ensure element is visible (not hidden by modal or CSS)
+        const originalDisplay = element.style.display;
+        const originalVisibility = element.style.visibility;
+        const originalOpacity = element.style.opacity;
+        
+        element.style.display = 'block';
+        element.style.visibility = 'visible';
+        element.style.opacity = '1';
+        
+        // Force a reflow
+        element.offsetHeight;
+        
+        console.log('Step 6 - Element visibility adjusted:', {
+            display: element.style.display,
+            visibility: element.style.visibility,
+            opacity: element.style.opacity,
+            dimensions: {
+                width: element.offsetWidth,
+                height: element.offsetHeight,
+                scrollWidth: element.scrollWidth,
+                scrollHeight: element.scrollHeight
+            }
+        });
+
+        // Step 7: Detect screen size and calculate optimal PDF dimensions
+        const screenInfo = {
+            screenWidth: window.screen.width,
+            screenHeight: window.screen.height,
+            windowWidth: window.innerWidth,
+            windowHeight: window.innerHeight,
+            devicePixelRatio: window.devicePixelRatio || 1,
+            viewportWidth: document.documentElement.clientWidth,
+            viewportHeight: document.documentElement.clientHeight
+        };
+        
+        console.log('Step 7a - Screen Information:', screenInfo);
+        
+        // Calculate optimal A4 content width based on screen size
+        // A4 width: 210mm = 794px at 96 DPI
+        // With 10mm margins on each side = 190mm content = ~718px
+        // Adjust based on device pixel ratio for better quality
+        let a4ContentWidth = 718; // Base width for 96 DPI
+        
+        // Adjust for high DPI screens (retina, etc.)
+        if (screenInfo.devicePixelRatio > 1) {
+            // For high DPI, we can use higher resolution but keep same logical width
+            console.log('Step 7b - High DPI screen detected, using optimized settings');
+        }
+        
+        // Ensure width doesn't exceed viewport
+        if (a4ContentWidth > screenInfo.viewportWidth) {
+            a4ContentWidth = Math.min(screenInfo.viewportWidth - 40, 718);
+            console.log('Step 7c - Adjusted width to fit viewport:', a4ContentWidth);
+        }
+        
+        console.log('Step 7d - Final A4 content width:', a4ContentWidth);
+        
+        // Step 7e: Apply inline styles for better PDF rendering
+        // html2pdf.js sometimes doesn't capture external CSS properly
+        console.log('Step 7e - Applying inline styles for PDF compatibility...');
+        const invoiceView = element.querySelector('.invoice-view');
+        const originalInvoiceViewWidth = invoiceView ? invoiceView.style.width : '';
+        const originalInvoiceViewMaxWidth = invoiceView ? invoiceView.style.maxWidth : '';
+        const originalInvoiceViewMargin = invoiceView ? invoiceView.style.margin : '';
+        
+        // Set fixed width to ensure consistent rendering
+        if (invoiceView) {
+            invoiceView.style.width = a4ContentWidth + 'px';
+            invoiceView.style.maxWidth = a4ContentWidth + 'px';
+            invoiceView.style.margin = '0 auto';
+            invoiceView.style.position = 'relative';
+        }
+        
+        // Force multiple reflows to ensure layout is settled
+        element.offsetHeight;
+        void element.offsetWidth;
+        
+        // Wait a bit more for layout to settle
+        setTimeout(() => {
+            applyPDFStyles(element, a4ContentWidth);
+            
+            // Force another reflow after styles are applied
+            element.offsetHeight;
+            void element.offsetWidth;
+            
+            // Now generate PDF
+            generatePDFWithOptions(element, invoiceView, originalInvoiceViewWidth, originalInvoiceViewMaxWidth, originalInvoiceViewMargin, a4ContentWidth, filename);
+        }, 200);
+        
+        // PDF generation will be called from the nested setTimeout
+    }, 500); // Initial delay to ensure everything is ready
 }
+
+// Separate function to generate PDF with proper options
+function generatePDFWithOptions(element, invoiceView, originalInvoiceViewWidth, originalInvoiceViewMaxWidth, originalInvoiceViewMargin, a4ContentWidth, filename) {
+    const originalDisplay = element.style.display;
+    const originalVisibility = element.style.visibility;
+    const originalOpacity = element.style.opacity;
+    
+    // Detect screen information for optimal PDF generation
+    const screenInfo = {
+        screenWidth: window.screen.width,
+        screenHeight: window.screen.height,
+        devicePixelRatio: window.devicePixelRatio || 1,
+        viewportWidth: window.innerWidth,
+        viewportHeight: window.innerHeight
+    };
+    
+    console.log('PDF Generation - Screen Info:', screenInfo);
+    console.log('PDF Generation - A4 Content Width:', a4ContentWidth);
+    
+    // Calculate optimal scale based on device pixel ratio
+    // Higher DPI screens can use higher scale for better quality
+    const optimalScale = Math.min(screenInfo.devicePixelRatio || 2, 3);
+    console.log('PDF Generation - Optimal Scale:', optimalScale);
+    
+    // Step 7b: Configure html2pdf with optimized options for alignment
+    // A4 dimensions: 210mm x 297mm
+    const opt = {
+        margin: [10, 10, 10, 10], // 10mm margins on all sides
+        filename: filename,
+        image: { 
+            type: 'jpeg', 
+            quality: 0.98 
+        },
+        html2canvas: { 
+            // Adjust scale based on device pixel ratio for optimal quality
+            scale: optimalScale, // Use calculated optimal scale
+            useCORS: true,
+            letterRendering: true,
+            logging: false,
+            backgroundColor: '#ffffff',
+            removeContainer: false,
+            allowTaint: false,
+            scrollX: 0,
+            scrollY: 0,
+            width: a4ContentWidth,
+            height: element.scrollHeight || 1200,
+            windowWidth: a4ContentWidth,
+            windowHeight: element.scrollHeight || 1200,
+            onclone: function(clonedDoc) {
+                // Ensure styles are applied in the cloned document
+                console.log('Step 7c - Applying styles to cloned document...');
+                const clonedElement = clonedDoc.getElementById('invoice-view-content');
+                if (clonedElement) {
+                    const clonedInvoiceView = clonedElement.querySelector('.invoice-view');
+                    if (clonedInvoiceView) {
+                        clonedInvoiceView.style.width = a4ContentWidth + 'px';
+                        clonedInvoiceView.style.maxWidth = a4ContentWidth + 'px';
+                        clonedInvoiceView.style.margin = '0 auto';
+                        clonedInvoiceView.style.position = 'relative';
+                    }
+                    // Re-apply styles to cloned element
+                    applyPDFStyles(clonedElement, a4ContentWidth);
+                }
+                applyPDFStylesToClone(clonedDoc, a4ContentWidth);
+            }
+        },
+        jsPDF: { 
+            unit: 'mm', 
+            format: 'a4', 
+            orientation: 'portrait',
+            compress: true
+        }
+    };
+
+    // Log screen info and PDF options (screenInfo already declared above)
+    console.log('Step 7 - Screen Information:', screenInfo);
+    console.log('Step 7 - html2pdf options:', JSON.stringify(opt, null, 2));
+    console.log('Step 8 - Starting html2pdf conversion...');
+
+    // Step 8: Generate PDF with extensive error handling
+    try {
+        const worker = html2pdf()
+            .set(opt)
+            .from(element)
+            .save();
+        
+        console.log('Step 9 - html2pdf worker created:', worker);
+        
+        worker
+            .then(() => {
+                console.log('✓✓✓ SUCCESS: PDF generated and downloaded!');
+                console.log('✓ File should be in your Downloads folder');
+                console.log('✓ Filename:', filename);
+                console.log('=== PDF GENERATION DEBUG END (SUCCESS) ===');
+                
+                // Restore original styles
+                element.style.display = originalDisplay;
+                element.style.visibility = originalVisibility;
+                element.style.opacity = originalOpacity;
+                
+                // Restore invoice view width
+                if (invoiceView) {
+                    invoiceView.style.width = originalInvoiceViewWidth;
+                    invoiceView.style.maxWidth = originalInvoiceViewMaxWidth;
+                    invoiceView.style.margin = originalInvoiceViewMargin;
+                    invoiceView.style.position = '';
+                }
+                
+                // Remove inline styles after PDF generation
+                removePDFStyles(element);
+                
+                showNotification('PDF downloaded successfully! Check your Downloads folder.', 'success');
+            })
+            .catch((error) => {
+                console.error('ERROR: PDF generation failed!');
+                console.error('Error type:', error.constructor.name);
+                console.error('Error message:', error.message);
+                console.error('Error stack:', error.stack);
+                console.error('Full error object:', error);
+                console.log('=== PDF GENERATION DEBUG END (ERROR) ===');
+                
+                // Restore original styles
+                element.style.display = originalDisplay;
+                element.style.visibility = originalVisibility;
+                element.style.opacity = originalOpacity;
+                
+                // Restore invoice view width
+                if (invoiceView) {
+                    invoiceView.style.width = originalInvoiceViewWidth;
+                    invoiceView.style.maxWidth = originalInvoiceViewMaxWidth;
+                    invoiceView.style.margin = originalInvoiceViewMargin;
+                    invoiceView.style.position = '';
+                }
+                
+                // Remove inline styles
+                removePDFStyles(element);
+                
+                // Try alternative method if html2pdf fails
+                console.log('Attempting alternative PDF generation method...');
+                tryAlternativePDFGeneration(element, filename);
+            });
+    } catch (syncError) {
+        console.error('SYNC ERROR: Exception during html2pdf setup:', syncError);
+        console.error('Error type:', syncError.constructor.name);
+        console.error('Error message:', syncError.message);
+        console.error('Error stack:', syncError.stack);
+        console.log('=== PDF GENERATION DEBUG END (SYNC ERROR) ===');
+        
+        // Restore original styles
+        element.style.display = originalDisplay;
+        element.style.visibility = originalVisibility;
+        element.style.opacity = originalOpacity;
+        
+        // Restore invoice view width
+        if (invoiceView) {
+            invoiceView.style.width = originalInvoiceViewWidth;
+            invoiceView.style.maxWidth = originalInvoiceViewMaxWidth;
+            invoiceView.style.margin = originalInvoiceViewMargin;
+            invoiceView.style.position = '';
+        }
+        
+        // Remove inline styles
+        removePDFStyles(element);
+        
+        showNotification('PDF generation error: ' + syncError.message, 'error');
+        tryAlternativePDFGeneration(element, filename);
+    }
+}
+
+// Apply inline styles for better PDF rendering
+function applyPDFStyles(element, containerWidth) {
+    // Invoice view width is set in downloadInvoice() for fixed A4 width
+    const invoiceView = element.querySelector('.invoice-view');
+    if (invoiceView) {
+        // Keep padding and box-sizing, but width is set externally
+        invoiceView.style.padding = '2.5rem 3rem';
+        invoiceView.style.boxSizing = 'border-box';
+    }
+    
+    // Calculate actual table width (container width minus padding)
+    // Padding: 2.5rem (40px) on each side = 80px total
+    const tableContentWidth = containerWidth ? (containerWidth - 80) : 638;
+    
+    // Ensure header uses full width
+    const header = element.querySelector('.invoice-header-new');
+    if (header) {
+        header.style.width = '100%';
+        header.style.boxSizing = 'border-box';
+    }
+    
+    // Ensure header left and right are properly sized
+    const headerLeft = element.querySelector('.header-left');
+    if (headerLeft) {
+        headerLeft.style.paddingRight = '2rem';
+        headerLeft.style.minWidth = '0';
+    }
+    
+    const headerRight = element.querySelector('.header-right');
+    if (headerRight) {
+        headerRight.style.minWidth = '280px';
+        headerRight.style.flexShrink = '0';
+    }
+    
+    // Force table layout for better alignment
+    const tables = element.querySelectorAll('.invoice-items-table-new, .summary-table');
+    tables.forEach(table => {
+        table.style.tableLayout = 'fixed';
+        table.style.width = '100%';
+        table.style.maxWidth = '100%';
+        table.style.borderCollapse = 'separate';
+        table.style.borderSpacing = '0';
+        table.style.boxSizing = 'border-box';
+    });
+    
+    // Ensure invoice-to-content uses full width with proper gap
+    const invoiceToContent = element.querySelector('.invoice-to-content');
+    if (invoiceToContent) {
+        invoiceToContent.style.width = '100%';
+        invoiceToContent.style.gap = '4rem';
+        invoiceToContent.style.padding = '1.5rem 0';
+        invoiceToContent.style.boxSizing = 'border-box';
+        invoiceToContent.style.alignItems = 'start';
+    }
+    
+    // Ensure address paragraphs are properly aligned
+    const addressParagraphs = element.querySelectorAll('.invoice-to-left p, .invoice-to-right p');
+    addressParagraphs.forEach(p => {
+        p.style.display = 'flex';
+        p.style.alignItems = 'flex-start';
+        p.style.margin = '0.75rem 0';
+    });
+    
+    // Ensure bottom section uses full width with proper gap
+    const bottomSection = element.querySelector('.invoice-bottom-section');
+    if (bottomSection) {
+        bottomSection.style.width = '100%';
+        bottomSection.style.gap = '3rem';
+        bottomSection.style.alignItems = 'start';
+        bottomSection.style.boxSizing = 'border-box';
+    }
+    
+    // Ensure summary table has proper width
+    const summaryTable = element.querySelector('.summary-table');
+    if (summaryTable) {
+        summaryTable.style.width = '100%';
+        summaryTable.style.maxWidth = '100%';
+        summaryTable.style.minWidth = '400px';
+    }
+    
+    // Ensure column widths are set and visible with explicit pixel widths
+    const colgroups = element.querySelectorAll('colgroup');
+    colgroups.forEach(colgroup => {
+        colgroup.style.display = 'table-column-group';
+        const cols = colgroup.querySelectorAll('col');
+        cols.forEach((col, index) => {
+            col.style.display = 'table-column';
+            // Set explicit pixel widths based on column class for better alignment
+            if (col.classList.contains('col-item')) {
+                col.style.width = Math.round(tableContentWidth * 0.15) + 'px';
+            } else if (col.classList.contains('col-description')) {
+                col.style.width = Math.round(tableContentWidth * 0.30) + 'px';
+            } else if (col.classList.contains('col-price')) {
+                col.style.width = Math.round(tableContentWidth * 0.18) + 'px';
+            } else if (col.classList.contains('col-qty')) {
+                col.style.width = Math.round(tableContentWidth * 0.12) + 'px';
+            } else if (col.classList.contains('col-total')) {
+                col.style.width = Math.round(tableContentWidth * 0.25) + 'px';
+            }
+        });
+    });
+    
+    // Also set explicit widths on table cells for better alignment
+    const table = element.querySelector('.invoice-items-table-new');
+    if (table) {
+        const headerCells = table.querySelectorAll('thead th');
+        headerCells.forEach(th => {
+            if (th.classList.contains('col-item')) {
+                th.style.width = Math.round(tableContentWidth * 0.15) + 'px';
+            } else if (th.classList.contains('col-description')) {
+                th.style.width = Math.round(tableContentWidth * 0.30) + 'px';
+            } else if (th.classList.contains('col-price')) {
+                th.style.width = Math.round(tableContentWidth * 0.18) + 'px';
+            } else if (th.classList.contains('col-qty')) {
+                th.style.width = Math.round(tableContentWidth * 0.12) + 'px';
+            } else if (th.classList.contains('col-total')) {
+                th.style.width = Math.round(tableContentWidth * 0.25) + 'px';
+            }
+        });
+        
+        const bodyCells = table.querySelectorAll('tbody td');
+        bodyCells.forEach(td => {
+            if (td.classList.contains('col-item')) {
+                td.style.width = Math.round(tableContentWidth * 0.15) + 'px';
+            } else if (td.classList.contains('col-description')) {
+                td.style.width = Math.round(tableContentWidth * 0.30) + 'px';
+            } else if (td.classList.contains('col-price')) {
+                td.style.width = Math.round(tableContentWidth * 0.18) + 'px';
+            } else if (td.classList.contains('col-qty')) {
+                td.style.width = Math.round(tableContentWidth * 0.12) + 'px';
+            } else if (td.classList.contains('col-total')) {
+                td.style.width = Math.round(tableContentWidth * 0.25) + 'px';
+            }
+        });
+    }
+    
+    // Force header background colors
+    const headers = element.querySelectorAll('.invoice-items-table-new thead');
+    headers.forEach(header => {
+        header.style.backgroundColor = '#1e3a8a';
+        header.style.background = '#1e3a8a';
+    });
+    
+    const headerCells = element.querySelectorAll('.invoice-items-table-new th');
+    headerCells.forEach(th => {
+        th.style.backgroundColor = '#1e3a8a';
+        th.style.color = '#ffffff';
+        th.style.padding = '16px 12px';
+        th.style.textAlign = th.classList.contains('col-price') || 
+                            th.classList.contains('col-qty') || 
+                            th.classList.contains('col-total') ? 'right' : 'left';
+        th.style.whiteSpace = 'nowrap';
+        th.style.overflow = 'visible';
+        th.style.display = 'table-cell';
+    });
+    
+    // Ensure all table cells are visible and have proper styling
+    const allTableCells = element.querySelectorAll('.invoice-items-table-new td');
+    allTableCells.forEach(td => {
+        // Set default padding if not set
+        if (!td.style.padding) {
+            td.style.padding = '16px 12px';
+        }
+        // Ensure visibility
+        td.style.display = 'table-cell';
+        td.style.overflow = 'visible';
+        td.style.minWidth = '0';
+    });
+    
+    // Ensure table cells have proper alignment and prevent text wrapping
+    const priceCells = element.querySelectorAll('.invoice-items-table-new td.col-price, .invoice-items-table-new td.col-qty, .invoice-items-table-new td.col-total');
+    priceCells.forEach(td => {
+        td.style.textAlign = 'right';
+        td.style.padding = '16px 12px';
+        td.style.whiteSpace = 'nowrap'; // Prevent text wrapping
+        td.style.wordBreak = 'keep-all'; // Keep numbers together
+        td.style.overflow = 'visible'; // Allow content to be visible
+        td.style.display = 'table-cell';
+    });
+    
+    // Specifically ensure Item and Description columns are visible and properly separated
+    const itemCells = element.querySelectorAll('.invoice-items-table-new td.col-item, .invoice-items-table-new th.col-item');
+    itemCells.forEach(cell => {
+        cell.style.display = 'table-cell !important';
+        cell.style.visibility = 'visible !important';
+        cell.style.overflow = 'visible';
+        cell.style.textOverflow = 'clip';
+        cell.style.whiteSpace = 'normal';
+        cell.style.minWidth = Math.round(tableContentWidth * 0.15) + 'px';
+        cell.style.maxWidth = Math.round(tableContentWidth * 0.15) + 'px';
+        cell.style.width = Math.round(tableContentWidth * 0.15) + 'px';
+        cell.style.paddingRight = '12px';
+        cell.style.paddingLeft = '12px';
+        cell.style.borderRight = '1px solid #e2e8f0';
+    });
+    
+    const descCells = element.querySelectorAll('.invoice-items-table-new td.col-description, .invoice-items-table-new th.col-description');
+    descCells.forEach(cell => {
+        cell.style.display = 'table-cell !important';
+        cell.style.visibility = 'visible !important';
+        cell.style.overflow = 'visible';
+        cell.style.wordBreak = 'break-word';
+        cell.style.whiteSpace = 'normal';
+        cell.style.minWidth = Math.round(tableContentWidth * 0.30) + 'px';
+        cell.style.maxWidth = Math.round(tableContentWidth * 0.30) + 'px';
+        cell.style.width = Math.round(tableContentWidth * 0.30) + 'px';
+        cell.style.paddingLeft = '12px';
+        cell.style.paddingRight = '12px';
+        cell.style.borderRight = '1px solid #e2e8f0';
+    });
+    
+    // Ensure all currency values don't wrap - check all cells
+    const allCells = element.querySelectorAll('.invoice-items-table-new td, .summary-table td');
+    allCells.forEach(td => {
+        const text = (td.textContent || '').trim();
+        // Check if cell contains currency symbol or decimal number
+        if (text.includes('₹') || text.includes('$') || text.includes('€') || 
+            text.match(/[\d,]+\.\d{2}/) || text.match(/^[\d,]+\.\d{2}$/)) {
+            td.style.whiteSpace = 'nowrap';
+            td.style.wordBreak = 'keep-all';
+            td.style.overflow = 'visible';
+        }
+    });
+    
+    // Also ensure summary table cells don't wrap
+    const summaryCells = element.querySelectorAll('.summary-table td:last-child');
+    summaryCells.forEach(td => {
+        td.style.whiteSpace = 'nowrap';
+        td.style.wordBreak = 'keep-all';
+        td.style.overflow = 'visible';
+    });
+    
+    // Ensure grand total row styling
+    const grandTotalRows = element.querySelectorAll('.summary-table .grand-total-row');
+    grandTotalRows.forEach(row => {
+        row.style.backgroundColor = '#1e3a8a';
+        row.style.background = '#1e3a8a';
+        const cells = row.querySelectorAll('td');
+        cells.forEach(cell => {
+            cell.style.color = '#ffffff';
+            cell.style.fontWeight = '700';
+        });
+    });
+    
+    // Force banner colors
+    const banners = element.querySelectorAll('.invoice-to-banner');
+    banners.forEach(banner => {
+        banner.style.backgroundColor = '#1e3a8a';
+        banner.style.color = '#ffffff';
+        banner.style.padding = '12px 20px';
+    });
+    
+    // Force total box styling
+    const totalBoxes = element.querySelectorAll('.total-parallelogram');
+    totalBoxes.forEach(box => {
+        box.style.backgroundColor = '#1e3a8a';
+        box.style.padding = '1.25rem 2rem';
+        box.style.borderRadius = '8px';
+        const labels = box.querySelectorAll('.total-label, .total-amount');
+        labels.forEach(label => {
+            label.style.color = '#ffffff';
+        });
+    });
+}
+
+// Remove inline styles after PDF generation
+function removePDFStyles(element) {
+    // Remove inline styles from tables
+    const tables = element.querySelectorAll('.invoice-items-table-new, .summary-table');
+    tables.forEach(table => {
+        table.style.tableLayout = '';
+        table.style.width = '';
+        table.style.borderCollapse = '';
+    });
+    
+    // Remove inline styles from cells
+    const cells = element.querySelectorAll('th, td');
+    cells.forEach(cell => {
+        cell.style.backgroundColor = '';
+        cell.style.color = '';
+        cell.style.padding = '';
+        cell.style.textAlign = '';
+    });
+    
+    // Remove inline styles from banners and boxes
+    const banners = element.querySelectorAll('.invoice-to-banner, .total-parallelogram');
+    banners.forEach(banner => {
+        banner.style.backgroundColor = '';
+        banner.style.color = '';
+        banner.style.padding = '';
+    });
+}
+
+// Apply styles to cloned document (for html2canvas)
+function applyPDFStylesToClone(clonedDoc, containerWidth) {
+    const clonedElement = clonedDoc.getElementById('invoice-view-content');
+    if (clonedElement) {
+        applyPDFStyles(clonedElement, containerWidth);
+        
+        // Calculate table width for cloned document
+        const tableContentWidth = containerWidth ? (containerWidth - 80) : 638;
+        
+        // Add additional stylesheet to cloned document
+        const style = clonedDoc.createElement('style');
+        style.textContent = `
+            .invoice-view {
+                box-sizing: border-box !important;
+                margin: 0 auto !important;
+            }
+            .invoice-items-table-new {
+                table-layout: fixed !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                border-collapse: separate !important;
+                border-spacing: 0 !important;
+                box-sizing: border-box !important;
+            }
+            .invoice-items-table-new th.col-item,
+            .invoice-items-table-new td.col-item {
+                display: table-cell !important;
+                visibility: visible !important;
+                width: ${Math.round(tableContentWidth * 0.15)}px !important;
+                min-width: ${Math.round(tableContentWidth * 0.15)}px !important;
+                max-width: ${Math.round(tableContentWidth * 0.15)}px !important;
+                overflow: visible !important;
+                white-space: normal !important;
+                padding: 16px 12px !important;
+            }
+            .invoice-items-table-new th.col-description,
+            .invoice-items-table-new td.col-description {
+                display: table-cell !important;
+                visibility: visible !important;
+                width: ${Math.round(tableContentWidth * 0.30)}px !important;
+                min-width: ${Math.round(tableContentWidth * 0.30)}px !important;
+                max-width: ${Math.round(tableContentWidth * 0.30)}px !important;
+                overflow: visible !important;
+                word-break: break-word !important;
+                white-space: normal !important;
+                padding: 16px 12px !important;
+            }
+            .invoice-items-table-new colgroup {
+                display: table-column-group !important;
+            }
+            .invoice-items-table-new colgroup col {
+                display: table-column !important;
+            }
+            .invoice-items-table-new colgroup col.col-item {
+                width: ${Math.round(tableContentWidth * 0.15)}px !important;
+            }
+            .invoice-items-table-new colgroup col.col-description {
+                width: ${Math.round(tableContentWidth * 0.30)}px !important;
+            }
+            .invoice-items-table-new colgroup col.col-price {
+                width: ${Math.round(tableContentWidth * 0.18)}px !important;
+            }
+            .invoice-items-table-new colgroup col.col-qty {
+                width: ${Math.round(tableContentWidth * 0.12)}px !important;
+            }
+            .invoice-items-table-new colgroup col.col-total {
+                width: ${Math.round(tableContentWidth * 0.25)}px !important;
+            }
+            .invoice-items-table-new th.col-item,
+            .invoice-items-table-new td.col-item {
+                width: ${Math.round(tableContentWidth * 0.15)}px !important;
+            }
+            .invoice-items-table-new th.col-description,
+            .invoice-items-table-new td.col-description {
+                width: ${Math.round(tableContentWidth * 0.30)}px !important;
+            }
+            .invoice-items-table-new th.col-price,
+            .invoice-items-table-new td.col-price {
+                width: ${Math.round(tableContentWidth * 0.18)}px !important;
+            }
+            .invoice-items-table-new th.col-qty,
+            .invoice-items-table-new td.col-qty {
+                width: ${Math.round(tableContentWidth * 0.12)}px !important;
+            }
+            .invoice-items-table-new th.col-total,
+            .invoice-items-table-new td.col-total {
+                width: ${Math.round(tableContentWidth * 0.25)}px !important;
+            }
+            .invoice-items-table-new th {
+                padding: 16px 12px !important;
+                white-space: nowrap !important;
+                display: table-cell !important;
+                overflow: visible !important;
+            }
+            .invoice-items-table-new td {
+                padding: 16px 12px !important;
+                display: table-cell !important;
+                overflow: visible !important;
+            }
+            .invoice-items-table-new td.col-item,
+            .invoice-items-table-new th.col-item {
+                display: table-cell !important;
+                visibility: visible !important;
+            }
+            .invoice-items-table-new td.col-description,
+            .invoice-items-table-new th.col-description {
+                display: table-cell !important;
+                visibility: visible !important;
+            }
+            .summary-table {
+                min-width: 400px !important;
+            }
+            .summary-table td {
+                padding: 14px 18px !important;
+            }
+            .invoice-to-content {
+                width: 100% !important;
+                box-sizing: border-box !important;
+            }
+            .invoice-bottom-section {
+                width: 100% !important;
+                box-sizing: border-box !important;
+            }
+            .summary-table {
+                width: 100% !important;
+                max-width: 100% !important;
+                box-sizing: border-box !important;
+            }
+            .invoice-items-table-new colgroup col {
+                display: table-column !important;
+            }
+            .invoice-items-table-new thead {
+                background: #1e3a8a !important;
+                background-color: #1e3a8a !important;
+            }
+            .invoice-items-table-new th {
+                background: #1e3a8a !important;
+                background-color: #1e3a8a !important;
+                color: #ffffff !important;
+                padding: 14px 16px !important;
+            }
+            .invoice-items-table-new td.col-price,
+            .invoice-items-table-new td.col-qty,
+            .invoice-items-table-new td.col-total {
+                text-align: right !important;
+                padding: 14px 16px !important;
+                white-space: nowrap !important;
+                word-break: keep-all !important;
+            }
+            .summary-table td {
+                white-space: nowrap !important;
+                word-break: keep-all !important;
+            }
+            .summary-table td:last-child {
+                text-align: right !important;
+            }
+            .summary-table .grand-total-row {
+                background: #1e3a8a !important;
+                background-color: #1e3a8a !important;
+            }
+            .summary-table .grand-total-row td {
+                color: #ffffff !important;
+            }
+            .invoice-to-banner {
+                background: #1e3a8a !important;
+                background-color: #1e3a8a !important;
+                color: #ffffff !important;
+            }
+            .total-parallelogram {
+                background: #1e3a8a !important;
+                background-color: #1e3a8a !important;
+            }
+            .total-label,
+            .total-amount {
+                color: #ffffff !important;
+            }
+        `;
+        clonedDoc.head.appendChild(style);
+    }
+}
+
+// Alternative PDF generation method
+function tryAlternativePDFGeneration(element, filename) {
+    console.log('=== ALTERNATIVE PDF METHOD START ===');
+    
+    // Method 1: Try with minimal options
+    console.log('Trying minimal html2pdf options...');
+    const minimalOpt = {
+        margin: 0,
+        filename: filename,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { 
+            scale: 1,
+            useCORS: true,
+            backgroundColor: '#ffffff',
+            logging: true
+        },
+        jsPDF: { 
+            unit: 'mm', 
+            format: 'a4', 
+            orientation: 'portrait'
+        }
+    };
+    
+    html2pdf()
+        .set(minimalOpt)
+        .from(element)
+        .save()
+        .then(() => {
+            console.log('SUCCESS: Alternative method worked!');
+            showNotification('PDF downloaded successfully (alternative method)!', 'success');
+        })
+        .catch((altError) => {
+            console.error('Alternative method also failed:', altError);
+            console.error('Error details:', {
+                message: altError.message,
+                stack: altError.stack,
+                name: altError.name
+            });
+            
+            // Last resort: Try with absolute minimal config
+            console.log('Trying absolute minimal configuration...');
+            try {
+                html2pdf()
+                    .set({
+                        margin: 1,
+                        filename: filename
+                    })
+                    .from(element)
+                    .save()
+                    .then(() => {
+                        console.log('SUCCESS: Minimal config worked!');
+                        showNotification('PDF downloaded successfully!', 'success');
+                    })
+                    .catch((minError) => {
+                        console.error('Even minimal config failed:', minError);
+                        showNotification('PDF generation failed completely. Error: ' + minError.message, 'error');
+                        console.log('=== ALTERNATIVE PDF METHOD END (ALL FAILED) ===');
+                    });
+            } catch (finalError) {
+                console.error('Fatal error in PDF generation:', finalError);
+                showNotification('PDF generation error. Please check console (F12) and report the error.', 'error');
+                console.log('=== ALTERNATIVE PDF METHOD END (FATAL ERROR) ===');
+            }
+        });
+}
+
+// Diagnostic function to test html2pdf.js
+function testHtml2Pdf() {
+    console.log('=== HTML2PDF DIAGNOSTIC TEST ===');
+    
+    // Check html2pdf availability
+    const html2pdfAvailable = typeof html2pdf !== 'undefined';
+    console.log('html2pdf available:', html2pdfAvailable);
+    
+    // Note: html2canvas and jsPDF are bundled inside html2pdf.js
+    // They don't need to be global - this is normal!
+    console.log('Note: html2canvas and jsPDF are bundled inside html2pdf.js');
+    console.log('They don\'t need to be global variables - this is expected behavior.');
+    
+    if (!html2pdfAvailable) {
+        console.error('✗ html2pdf.js is not loaded!');
+        console.error('Check if script tag is present and CDN is accessible');
+        console.log('=== END DIAGNOSTIC TEST (FAILED) ===');
+        return;
+    }
+    
+    // Test html2pdf API
+    console.log('Testing html2pdf API...');
+    try {
+        const worker = html2pdf();
+        console.log('✓ html2pdf() function works');
+        console.log('✓ html2pdf().set:', typeof worker.set === 'function' ? 'Available' : 'Missing');
+        console.log('✓ html2pdf().from:', typeof worker.from === 'function' ? 'Available' : 'Missing');
+        console.log('✓ html2pdf().save:', typeof worker.save === 'function' ? 'Available' : 'Missing');
+        
+        // Test with a simple div
+        const testDiv = document.createElement('div');
+        testDiv.innerHTML = `
+            <div style="padding: 20px; background: white; font-family: Arial;">
+                <h1 style="color: #1e3a8a;">Test PDF</h1>
+                <p>If you see this PDF, html2pdf.js is working correctly!</p>
+                <p>This confirms that html2canvas and jsPDF are working internally.</p>
+            </div>
+        `;
+        testDiv.style.position = 'absolute';
+        testDiv.style.left = '-9999px';
+        document.body.appendChild(testDiv);
+        
+        console.log('Generating test PDF...');
+        console.log('This may take a few seconds...');
+        
+        html2pdf()
+            .set({
+                margin: 10,
+                filename: 'html2pdf-test.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { 
+                    scale: 2,
+                    useCORS: true,
+                    backgroundColor: '#ffffff'
+                },
+                jsPDF: { 
+                    unit: 'mm', 
+                    format: 'a4', 
+                    orientation: 'portrait'
+                }
+            })
+            .from(testDiv)
+            .save()
+            .then(() => {
+                console.log('✓✓✓ SUCCESS: Test PDF generated and downloaded!');
+                console.log('✓ This confirms html2pdf.js is working correctly');
+                console.log('✓ html2canvas is working internally');
+                console.log('✓ jsPDF is working internally');
+                document.body.removeChild(testDiv);
+                console.log('=== END DIAGNOSTIC TEST (SUCCESS) ===');
+            })
+            .catch((err) => {
+                console.error('✗✗✗ FAILED: Test PDF generation failed');
+                console.error('Error type:', err.constructor.name);
+                console.error('Error message:', err.message);
+                console.error('Error stack:', err.stack);
+                console.error('Full error:', err);
+                document.body.removeChild(testDiv);
+                console.log('=== END DIAGNOSTIC TEST (FAILED) ===');
+                
+                // Provide troubleshooting tips
+                console.log('\n=== TROUBLESHOOTING TIPS ===');
+                if (err.message.includes('CORS')) {
+                    console.log('CORS Error: Try serving from same origin or configure CORS');
+                }
+                if (err.message.includes('canvas')) {
+                    console.log('Canvas Error: Check browser compatibility (Chrome/Firefox recommended)');
+                }
+                if (err.message.includes('memory') || err.message.includes('size')) {
+                    console.log('Memory/Size Error: Content might be too large, try with smaller content');
+                }
+            });
+    } catch (syncError) {
+        console.error('✗✗✗ SYNC ERROR: Exception during test setup');
+        console.error('Error:', syncError);
+        console.log('=== END DIAGNOSTIC TEST (SYNC ERROR) ===');
+    }
+}
+
+// Make test function available globally for debugging
+window.testHtml2Pdf = testHtml2Pdf;
 
 function shareInvoice() {
     if (navigator.share) {

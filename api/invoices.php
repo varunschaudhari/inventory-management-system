@@ -29,8 +29,11 @@ switch ($method) {
             $invoice = $result->fetch_assoc();
             
             if ($invoice) {
-                // Get invoice items
-                $stmt2 = $conn->prepare("SELECT * FROM invoice_items WHERE invoice_id = ?");
+                // Get invoice items with product description
+                $stmt2 = $conn->prepare("SELECT ii.*, p.description as product_description 
+                                        FROM invoice_items ii 
+                                        LEFT JOIN products p ON ii.product_id = p.id 
+                                        WHERE ii.invoice_id = ?");
                 $stmt2->bind_param("i", $id);
                 $stmt2->execute();
                 $result2 = $stmt2->get_result();
