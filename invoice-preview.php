@@ -33,15 +33,25 @@ if (!$invoice) {
 
 // Fetch invoice items
 $stmt = $conn->prepare("
-    SELECT ii.*, p.product_name, p.description as product_description
+    SELECT ii.*, 
+           COALESCE(p.product_name, ii.product_name) as product_name,
+           p.description as product_description
     FROM invoice_items ii
     LEFT JOIN products p ON ii.product_id = p.id
     WHERE ii.invoice_id = ?
+    ORDER BY ii.id
 ");
 $stmt->bind_param("i", $invoice_id);
 $stmt->execute();
 $result = $stmt->get_result();
-$items = $result->fetch_all(MYSQLI_ASSOC);
+$items = [];
+while ($row = $result->fetch_assoc()) {
+    // Ensure product_name is always available
+    if (empty($row['product_name'])) {
+        $row['product_name'] = 'N/A';
+    }
+    $items[] = $row;
+}
 
 // Fetch shop settings
 $settings_result = $conn->query("SELECT setting_key, setting_value FROM settings");
@@ -139,16 +149,27 @@ function formatDate($date) {
         </div>
         
         <div id="invoice-view-content">
-            <!-- Invoice content will be loaded here -->
+            <div style="padding: 2rem; text-align: center;">
+                <p>Loading invoice...</p>
+            </div>
         </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script>
         // Invoice data from PHP
-        const invoiceData = <?php echo json_encode($invoice); ?>;
-        const invoiceItems = <?php echo json_encode($items); ?>;
-        const shopSettings = <?php echo json_encode($settings); ?>;
+        const invoiceData = <?php echo json_encode($invoice ?: []); ?>;
+        const invoiceItems = <?php echo json_encode($items ?: []); ?>;
+        const shopSettings = <?php echo json_encode($settings ?: []); ?>;
+        
+        // Debug: Log data
+        console.log('Invoice Preview - Data loaded:', {
+            hasInvoiceData: !!invoiceData && Object.keys(invoiceData).length > 0,
+            hasItems: invoiceItems && invoiceItems.length > 0,
+            hasSettings: !!shopSettings && Object.keys(shopSettings).length > 0,
+            invoiceId: invoiceData?.id || 'N/A',
+            itemCount: invoiceItems?.length || 0
+        });
 
         // Format currency
         function formatCurrency(amount) {
@@ -162,11 +183,99 @@ function formatDate($date) {
             return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
         }
 
+        // Convert number to words (Indian format)
+        function numberToWords(amount) {
+            const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'];
+            const teens = ['Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+            const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+            
+            function convertHundreds(num) {
+                let result = '';
+                if (num >= 100) {
+                    result += ones[Math.floor(num / 100)] + ' Hundred ';
+                    num %= 100;
+                }
+                if (num >= 20) {
+                    result += tens[Math.floor(num / 10)] + ' ';
+                    num %= 10;
+                } else if (num >= 10) {
+                    result += teens[num - 10] + ' ';
+                    return result.trim();
+                }
+                if (num > 0) {
+                    result += ones[num] + ' ';
+                }
+                return result.trim();
+            }
+            
+            let rupees = Math.floor(amount);
+            const paise = Math.round((amount - rupees) * 100);
+            
+            let words = '';
+            
+            if (rupees === 0) {
+                words = 'Zero';
+            } else {
+                // Crores
+                if (rupees >= 10000000) {
+                    const crores = Math.floor(rupees / 10000000);
+                    words += convertHundreds(crores) + ' Crore ';
+                    rupees %= 10000000;
+                }
+                
+                // Lakhs
+                if (rupees >= 100000) {
+                    const lakhs = Math.floor(rupees / 100000);
+                    words += convertHundreds(lakhs) + ' Lakh ';
+                    rupees %= 100000;
+                }
+                
+                // Thousands
+                if (rupees >= 1000) {
+                    const thousands = Math.floor(rupees / 1000);
+                    words += convertHundreds(thousands) + ' Thousand ';
+                    rupees %= 1000;
+                }
+                
+                // Hundreds, Tens, Ones
+                if (rupees > 0) {
+                    words += convertHundreds(rupees) + ' ';
+                }
+                
+                words = words.trim() + ' Rupees';
+            }
+            
+            // Add paise
+            if (paise > 0) {
+                words += ' and ' + convertHundreds(paise) + ' Paise';
+            }
+            
+            words += ' Only';
+            
+            return words.charAt(0).toUpperCase() + words.slice(1);
+        }
+
         // Display invoice
         function displayInvoice() {
-            const container = document.getElementById('invoice-view-content');
-            
-            const itemsHtml = invoiceItems.map(item => `
+            try {
+                console.log('Displaying invoice...', { invoiceData, invoiceItems, shopSettings });
+                
+                const container = document.getElementById('invoice-view-content');
+                if (!container) {
+                    console.error('Container element not found!');
+                    return;
+                }
+                
+                if (!invoiceData || Object.keys(invoiceData).length === 0) {
+                    console.error('Invoice data is missing or empty!', invoiceData);
+                    container.innerHTML = '<div style="padding: 2rem; text-align: center; color: red;"><h3>Error: Invoice data not found</h3><p>Please check if the invoice ID is correct.</p></div>';
+                    return;
+                }
+                
+                // Ensure invoiceItems is an array
+                const safeItems = Array.isArray(invoiceItems) ? invoiceItems : [];
+                
+                const itemsHtml = safeItems.map(item => `
                 <tr>
                     <td class="col-item"><strong>${item.product_name || 'N/A'}</strong></td>
                     <td class="col-description">${item.product_description || '-'}</td>
@@ -290,6 +399,9 @@ function formatDate($date) {
                                     <td><strong>${formatCurrency(invoiceData.total_amount)}</strong></td>
                                 </tr>
                             </table>
+                            <div class="amount-in-words">
+                                <p><strong>Amount in Words:</strong> ${numberToWords(invoiceData.total_amount)}</p>
+                            </div>
                         </div>
                     </div>
                     
@@ -308,6 +420,21 @@ function formatDate($date) {
                     </div>
                 </div>
             `;
+                
+                console.log('Invoice displayed successfully');
+            } catch (error) {
+                console.error('Error displaying invoice:', error);
+                const container = document.getElementById('invoice-view-content');
+                if (container) {
+                    container.innerHTML = `
+                        <div style="padding: 2rem; text-align: center; color: red;">
+                            <h3>Error Loading Invoice</h3>
+                            <p>${error.message}</p>
+                            <p style="font-size: 0.9rem; margin-top: 1rem;">Please check the console for details.</p>
+                        </div>
+                    `;
+                }
+            }
         }
 
         // Download PDF function
@@ -347,7 +474,21 @@ function formatDate($date) {
         }
 
         // Load invoice on page load
-        window.addEventListener('DOMContentLoaded', displayInvoice);
+        if (document.readyState === 'loading') {
+            window.addEventListener('DOMContentLoaded', displayInvoice);
+        } else {
+            // DOM already loaded
+            displayInvoice();
+        }
+        
+        // Also try after a short delay as fallback
+        setTimeout(() => {
+            const container = document.getElementById('invoice-view-content');
+            if (container && (!container.innerHTML || container.innerHTML.trim().length < 100)) {
+                console.log('Retrying invoice display...');
+                displayInvoice();
+            }
+        }, 500);
     </script>
 </body>
 </html>

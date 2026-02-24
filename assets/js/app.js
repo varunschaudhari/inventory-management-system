@@ -916,6 +916,9 @@ function displayInvoiceView(invoice) {
                                     <td><strong>${formatCurrency(invoice.total_amount)}</strong></td>
                                 </tr>
                             </table>
+                            <div class="amount-in-words">
+                                <p><strong>Amount in Words:</strong> ${numberToWords(invoice.total_amount)}</p>
+                            </div>
                         </div>
                     </div>
                     
@@ -1743,6 +1746,25 @@ function applyPDFStylesToClone(clonedDoc, containerWidth) {
             .total-amount {
                 color: #ffffff !important;
             }
+            .amount-in-words {
+                margin-top: 1.5rem !important;
+                padding: 1rem 1.5rem !important;
+                background: #f8fafc !important;
+                border-radius: 6px !important;
+                border-left: 3px solid #1e3a8a !important;
+                width: 100% !important;
+                box-sizing: border-box !important;
+            }
+            .amount-in-words p {
+                margin: 0 !important;
+                color: #1e293b !important;
+                font-size: 0.9rem !important;
+                line-height: 1.6 !important;
+            }
+            .amount-in-words strong {
+                color: #1e3a8a !important;
+                font-weight: 600 !important;
+            }
         `;
         clonedDoc.head.appendChild(style);
     }
@@ -2018,6 +2040,78 @@ async function handleSettingsSubmit(e) {
 // Utility Functions
 function formatCurrency(amount) {
     return '₹' + parseFloat(amount).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+// Convert number to words (Indian format)
+function numberToWords(amount) {
+    const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'];
+    const teens = ['Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+    const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+    
+    function convertHundreds(num) {
+        let result = '';
+        if (num >= 100) {
+            result += ones[Math.floor(num / 100)] + ' Hundred ';
+            num %= 100;
+        }
+        if (num >= 20) {
+            result += tens[Math.floor(num / 10)] + ' ';
+            num %= 10;
+        } else if (num >= 10) {
+            result += teens[num - 10] + ' ';
+            return result.trim();
+        }
+        if (num > 0) {
+            result += ones[num] + ' ';
+        }
+        return result.trim();
+    }
+    
+    const rupees = Math.floor(amount);
+    const paise = Math.round((amount - rupees) * 100);
+    
+    let words = '';
+    
+    if (rupees === 0) {
+        words = 'Zero';
+    } else {
+        // Crores
+        if (rupees >= 10000000) {
+            const crores = Math.floor(rupees / 10000000);
+            words += convertHundreds(crores) + ' Crore ';
+            rupees %= 10000000;
+        }
+        
+        // Lakhs
+        if (rupees >= 100000) {
+            const lakhs = Math.floor(rupees / 100000);
+            words += convertHundreds(lakhs) + ' Lakh ';
+            rupees %= 100000;
+        }
+        
+        // Thousands
+        if (rupees >= 1000) {
+            const thousands = Math.floor(rupees / 1000);
+            words += convertHundreds(thousands) + ' Thousand ';
+            rupees %= 1000;
+        }
+        
+        // Hundreds, Tens, Ones
+        if (rupees > 0) {
+            words += convertHundreds(rupees) + ' ';
+        }
+        
+        words = words.trim() + ' Rupees';
+    }
+    
+    // Add paise
+    if (paise > 0) {
+        words += ' and ' + convertHundreds(paise) + ' Paise';
+    }
+    
+    words += ' Only';
+    
+    return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
 function formatDate(dateString) {

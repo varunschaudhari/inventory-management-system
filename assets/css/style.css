@@ -1089,10 +1089,34 @@ body {
 
 .summary-section {
     display: flex;
+    flex-direction: column;
     justify-content: flex-end;
     width: 100%;
     box-sizing: border-box;
-    align-items: flex-start;
+    align-items: flex-end;
+}
+
+.amount-in-words {
+    margin-top: 1.5rem;
+    padding: 1rem 1.5rem;
+    background: #f8fafc;
+    border-radius: 6px;
+    border-left: 3px solid #1e3a8a;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.amount-in-words p {
+    margin: 0;
+    color: #1e293b;
+    font-size: 0.9rem;
+    line-height: 1.6;
+}
+
+.amount-in-words strong {
+    color: #1e3a8a;
+    font-weight: 600;
+    margin-right: 0.5rem;
 }
 
 .summary-table {
