@@ -79,17 +79,23 @@ function formatDate($date) {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="assets/css/style.css">
     <style>
+        * {
+            box-sizing: border-box;
+        }
         body {
             margin: 0;
             padding: 20px;
             background: #f5f5f5;
+            overflow-x: hidden;
         }
         .preview-container {
             max-width: 900px;
+            width: 100%;
             margin: 0 auto;
             background: white;
             padding: 20px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
         }
         .preview-header {
             display: flex;
@@ -98,6 +104,8 @@ function formatDate($date) {
             margin-bottom: 20px;
             padding-bottom: 15px;
             border-bottom: 2px solid #1e3a8a;
+            flex-wrap: wrap;
+            gap: 10px;
         }
         .preview-header h1 {
             margin: 0;
@@ -106,6 +114,7 @@ function formatDate($date) {
         .preview-actions {
             display: flex;
             gap: 10px;
+            flex-wrap: wrap;
         }
         .btn {
             padding: 10px 20px;
@@ -128,6 +137,145 @@ function formatDate($date) {
         }
         .btn:hover {
             opacity: 0.9;
+        }
+        #invoice-view-content {
+            width: 100%;
+            overflow: hidden;
+            max-width: 100%;
+        }
+        .invoice-view {
+            width: 100% !important;
+            max-width: 100% !important;
+            padding: 1.5rem 2rem !important;
+            margin: 0 !important;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
+        .invoice-header-new {
+            width: 100% !important;
+            max-width: 100% !important;
+            box-sizing: border-box;
+            flex-wrap: wrap;
+        }
+        .header-left {
+            flex: 1;
+            min-width: 200px;
+            max-width: 100%;
+        }
+        .header-right {
+            flex: 0 0 auto;
+            min-width: 250px;
+            max-width: 100%;
+        }
+        .invoice-items-table-new {
+            width: 100% !important;
+            max-width: 100% !important;
+            table-layout: fixed !important;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
+        .invoice-items-table-new colgroup col.col-item {
+            width: 18% !important;
+            min-width: 0 !important;
+        }
+        .invoice-items-table-new colgroup col.col-description {
+            width: 35% !important;
+            min-width: 0 !important;
+        }
+        .invoice-items-table-new colgroup col.col-price {
+            width: 15% !important;
+            min-width: 0 !important;
+        }
+        .invoice-items-table-new colgroup col.col-qty {
+            width: 10% !important;
+            min-width: 0 !important;
+        }
+        .invoice-items-table-new colgroup col.col-total {
+            width: 22% !important;
+            min-width: 0 !important;
+        }
+        .invoice-items-table-new th,
+        .invoice-items-table-new td {
+            padding: 12px 8px !important;
+            font-size: 0.85rem !important;
+            word-wrap: break-word;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .invoice-items-table-new td.col-description {
+            word-break: break-word;
+            white-space: normal;
+        }
+        .invoice-to-content {
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            width: 100%;
+            max-width: 100%;
+        }
+        .invoice-bottom-section {
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            width: 100%;
+            max-width: 100%;
+        }
+        .summary-table {
+            width: 100% !important;
+            max-width: 100% !important;
+            min-width: 0 !important;
+        }
+        @media (max-width: 768px) {
+            .preview-container {
+                padding: 15px;
+            }
+            .invoice-view {
+                padding: 1rem 1.5rem !important;
+            }
+            .invoice-header-new {
+                flex-direction: column;
+            }
+            .header-right {
+                width: 100%;
+                align-items: flex-start !important;
+            }
+            .invoice-to-content,
+            .invoice-bottom-section {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+            .invoice-items-table-new {
+                font-size: 0.75rem;
+            }
+            .invoice-items-table-new th,
+            .invoice-items-table-new td {
+                padding: 8px 6px !important;
+            }
+        }
+        @media print {
+            body {
+                padding: 0;
+                background: white;
+            }
+            .preview-container {
+                max-width: 100%;
+                padding: 0;
+                box-shadow: none;
+            }
+            .preview-header {
+                display: none;
+            }
+            .invoice-view {
+                padding: 1.5rem 2rem !important;
+                page-break-inside: avoid;
+            }
+            .invoice-header-new {
+                page-break-inside: avoid;
+            }
+            .invoice-items-table-new {
+                page-break-inside: avoid;
+            }
+            .invoice-bottom-section {
+                page-break-inside: avoid;
+            }
         }
     </style>
 </head>
@@ -277,11 +425,11 @@ function formatDate($date) {
                 
                 const itemsHtml = safeItems.map(item => `
                 <tr>
-                    <td class="col-item"><strong>${item.product_name || 'N/A'}</strong></td>
+                    <td class="col-item">${item.product_name || 'N/A'}</td>
                     <td class="col-description">${item.product_description || '-'}</td>
                     <td class="col-price">${formatCurrency(item.unit_price)}</td>
                     <td class="col-qty">${item.quantity}</td>
-                    <td class="col-total"><strong>${formatCurrency(item.total_price)}</strong></td>
+                    <td class="col-total">${formatCurrency(item.total_price)}</td>
                 </tr>
             `).join('');
             
@@ -294,109 +442,105 @@ function formatDate($date) {
                                 <div class="logo-placeholder">
                                     <span>${(shopSettings['shop_name'] || 'My Shop').charAt(0).toUpperCase()}</span>
                                 </div>
-                                <h2 class="company-name">${shopSettings['shop_name'] || 'My Shop'}</h2>
-                            </div>
-                            <div class="invoice-meta">
-                                <p><strong>Invoice No:</strong> ${invoiceData.invoice_number}</p>
-                                <p><strong>Invoice Date:</strong> ${formatDate(invoiceData.invoice_date)}</p>
+                                <div class="company-info">
+                                    <h2 class="company-name">${shopSettings['shop_name'] || 'My Shop'}</h2>
+                                    <div class="company-details">
+                                        ${shopSettings['shop_address'] ? `<p class="company-detail"><i class="fas fa-map-marker-alt"></i> ${shopSettings['shop_address']}</p>` : ''}
+                                        ${shopSettings['shop_phone'] ? `<p class="company-detail"><i class="fas fa-phone"></i> ${shopSettings['shop_phone']}</p>` : ''}
+                                        ${shopSettings['shop_email'] ? `<p class="company-detail"><i class="fas fa-envelope"></i> ${shopSettings['shop_email']}</p>` : ''}
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <div class="header-right">
-                            <div class="contact-blocks">
-                                <div class="contact-block">
-                                    <i class="fas fa-envelope"></i>
-                                    <div>
-                                        <p>${shopSettings['shop_email'] || 'email@example.com'}</p>
+                            <div class="invoice-info-box">
+                                <h1 class="invoice-title">INVOICE</h1>
+                                <div class="invoice-details-list">
+                                    <div class="invoice-detail-row">
+                                        <span class="invoice-detail-label">Invoice No:</span>
+                                        <span class="invoice-detail-value">${invoiceData.invoice_number}</span>
+                                    </div>
+                                    <div class="invoice-detail-row">
+                                        <span class="invoice-detail-label">Date:</span>
+                                        <span class="invoice-detail-value">${formatDate(invoiceData.invoice_date)}</span>
                                     </div>
                                 </div>
-                                <div class="contact-block">
-                                    <i class="fas fa-phone"></i>
-                                    <div>
-                                        <p>${shopSettings['shop_phone'] || '+91-000-000-0000'}</p>
-                                        <p style="font-size: 0.8rem; color: #64748b;">Monday to Friday</p>
-                                    </div>
-                                </div>
-                                <div class="contact-block">
-                                    <i class="fas fa-map-marker-alt"></i>
-                                    <div>
-                                        <p>${shopSettings['shop_address'] || 'Address'}</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="total-parallelogram">
-                                <div class="total-label">TOTAL</div>
-                                <div class="total-amount">${formatCurrency(invoiceData.total_amount)}</div>
                             </div>
                         </div>
                     </div>
                     
                     <!-- Invoice To Section -->
                     <div class="invoice-to-section">
-                        <div class="invoice-to-banner">INVOICE TO</div>
+                        <div class="invoice-to-header">
+                            <h3>Bill To</h3>
+                        </div>
                         <div class="invoice-to-content">
-                            <div class="invoice-to-left">
-                                <p><strong>Name:</strong> ${invoiceData.customer_name || 'Walk-in Customer'}</p>
-                                <p><strong>Email:</strong> ${invoiceData.email || '-'}</p>
-                            </div>
-                            <div class="invoice-to-right">
-                                <p><strong>Phone:</strong> ${invoiceData.phone || '-'}</p>
-                                <p><strong>Address:</strong> ${invoiceData.address || '-'}</p>
+                            <div class="customer-info">
+                                <p class="customer-name">${invoiceData.customer_name || 'Walk-in Customer'}</p>
+                                ${invoiceData.email ? `<p class="customer-detail"><i class="fas fa-envelope"></i> ${invoiceData.email}</p>` : ''}
+                                ${invoiceData.phone ? `<p class="customer-detail"><i class="fas fa-phone"></i> ${invoiceData.phone}</p>` : ''}
+                                ${invoiceData.address ? `<p class="customer-detail"><i class="fas fa-map-marker-alt"></i> ${invoiceData.address}</p>` : ''}
                             </div>
                         </div>
                     </div>
                     
                     <!-- Items Table -->
-                    <table class="invoice-items-table-new">
-                        <colgroup>
-                            <col class="col-item">
-                            <col class="col-description">
-                            <col class="col-price">
-                            <col class="col-qty">
-                            <col class="col-total">
-                        </colgroup>
-                        <thead>
-                            <tr>
-                                <th class="col-item">Item</th>
-                                <th class="col-description">Description</th>
-                                <th class="col-price">Price</th>
-                                <th class="col-qty">Qty</th>
-                                <th class="col-total">Total</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${itemsHtml}
-                        </tbody>
-                    </table>
+                    <div class="table-wrapper">
+                        <table class="invoice-items-table-new">
+                            <colgroup>
+                                <col class="col-item" style="width: 20%;">
+                                <col class="col-description" style="width: 35%;">
+                                <col class="col-price" style="width: 15%;">
+                                <col class="col-qty" style="width: 10%;">
+                                <col class="col-total" style="width: 20%;">
+                            </colgroup>
+                            <thead>
+                                <tr>
+                                    <th class="col-item">Item</th>
+                                    <th class="col-description">Description</th>
+                                    <th class="col-price">Unit Price</th>
+                                    <th class="col-qty">Qty</th>
+                                    <th class="col-total">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${itemsHtml}
+                            </tbody>
+                        </table>
+                    </div>
                     
                     <!-- Bottom Section: Summary and Payment Info -->
                     <div class="invoice-bottom-section">
                         <div class="payment-info-section">
-                            <h4>PAYMENT INFO:</h4>
+                            <h4>Payment Information</h4>
                             <div class="payment-details">
-                                <p class="payment-method"><strong>Payment Method:</strong> ${invoiceData.payment_method || 'Cash'}</p>
+                                <div class="payment-row">
+                                    <span class="payment-label">Payment Method:</span>
+                                    <span class="payment-value">${invoiceData.payment_method || 'Cash'}</span>
+                                </div>
                             </div>
                         </div>
                         <div class="summary-section">
                             <table class="summary-table">
                                 <tr>
-                                    <td>Subtotal:</td>
-                                    <td>${formatCurrency(invoiceData.subtotal)}</td>
+                                    <td class="summary-label">Subtotal</td>
+                                    <td class="summary-value">${formatCurrency(invoiceData.subtotal)}</td>
                                 </tr>
                                 ${invoiceData.discount > 0 ? `
                                 <tr class="discount-row">
-                                    <td>Discount ${invoiceData.discount_percent || ''}%:</td>
-                                    <td>-${formatCurrency(invoiceData.discount)}</td>
+                                    <td class="summary-label">Discount ${invoiceData.discount_percent || ''}%</td>
+                                    <td class="summary-value discount-value">-${formatCurrency(invoiceData.discount)}</td>
                                 </tr>
                                 ` : ''}
                                 ${invoiceData.tax_rate > 0 ? `
                                 <tr>
-                                    <td>Tax ${invoiceData.tax_rate}%:</td>
-                                    <td>+${formatCurrency(invoiceData.tax_amount)}</td>
+                                    <td class="summary-label">Tax ${invoiceData.tax_rate}%</td>
+                                    <td class="summary-value">${formatCurrency(invoiceData.tax_amount)}</td>
                                 </tr>
                                 ` : ''}
                                 <tr class="grand-total-row">
-                                    <td><strong>Grand Total:</strong></td>
-                                    <td><strong>${formatCurrency(invoiceData.total_amount)}</strong></td>
+                                    <td class="summary-label">Grand Total</td>
+                                    <td class="summary-value">${formatCurrency(invoiceData.total_amount)}</td>
                                 </tr>
                             </table>
                             <div class="amount-in-words">
@@ -413,6 +557,7 @@ function formatDate($date) {
                         </div>
                         <div class="footer-right">
                             <div class="signature-section">
+                                <div class="signature-line"></div>
                                 <p class="signature-label">Authorized Signature</p>
                                 <p class="signature-name">${shopSettings['shop_name'] || 'Shop Owner'}</p>
                             </div>
