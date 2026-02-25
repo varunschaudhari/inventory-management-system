@@ -263,6 +263,10 @@ function formatDate($date) {
             .preview-header {
                 display: none;
             }
+            .invoice-actions,
+            .action-icon-btn {
+                display: none !important;
+            }
             .invoice-view {
                 padding: 1.5rem 2rem !important;
                 page-break-inside: avoid;
@@ -324,11 +328,13 @@ function formatDate($date) {
             return '₹' + parseFloat(amount).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
         }
 
-        // Format date
+        // Format date (DD.MM.YYYY format)
         function formatDate(dateString) {
             const date = new Date(dateString);
-            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-            return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            return `${day}.${month}.${year}`;
         }
 
         // Convert number to words (Indian format)
@@ -435,51 +441,59 @@ function formatDate($date) {
             
             container.innerHTML = `
                 <div class="invoice-view">
-                    <!-- Header Section -->
-                    <div class="invoice-header-new">
+                    <!-- Top Header Section -->
+                    <div class="invoice-top-header">
                         <div class="header-left">
-                            <div class="company-logo">
+                            <div class="company-logo-section">
                                 <div class="logo-placeholder">
                                     <span>${(shopSettings['shop_name'] || 'My Shop').charAt(0).toUpperCase()}</span>
                                 </div>
-                                <div class="company-info">
+                                <div class="company-info-wrapper">
                                     <h2 class="company-name">${shopSettings['shop_name'] || 'My Shop'}</h2>
-                                    <div class="company-details">
-                                        ${shopSettings['shop_address'] ? `<p class="company-detail"><i class="fas fa-map-marker-alt"></i> ${shopSettings['shop_address']}</p>` : ''}
-                                        ${shopSettings['shop_phone'] ? `<p class="company-detail"><i class="fas fa-phone"></i> ${shopSettings['shop_phone']}</p>` : ''}
-                                        ${shopSettings['shop_email'] ? `<p class="company-detail"><i class="fas fa-envelope"></i> ${shopSettings['shop_email']}</p>` : ''}
+                                    <div class="payment-method-section">
+                                        <span class="payment-method-label">Payment Method:</span>
+                                        <span class="payment-method-value">${invoiceData.payment_method || 'Cash'}</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         <div class="header-right">
-                            <div class="invoice-info-box">
-                                <h1 class="invoice-title">INVOICE</h1>
-                                <div class="invoice-details-list">
-                                    <div class="invoice-detail-row">
-                                        <span class="invoice-detail-label">Invoice No:</span>
-                                        <span class="invoice-detail-value">${invoiceData.invoice_number}</span>
-                                    </div>
-                                    <div class="invoice-detail-row">
-                                        <span class="invoice-detail-label">Date:</span>
-                                        <span class="invoice-detail-value">${formatDate(invoiceData.invoice_date)}</span>
+                            <div class="invoice-banner-wrapper">
+                                <div class="invoice-banner">
+                                    <h1 class="invoice-title-banner">INVOICE</h1>
+                                    <div class="invoice-actions">
+                                        <button class="action-icon-btn" onclick="window.print()" title="Print">
+                                            <i class="fas fa-print"></i>
+                                        </button>
+                                        <button class="action-icon-btn" onclick="downloadPDF()" title="Download">
+                                            <i class="fas fa-download"></i>
+                                        </button>
                                     </div>
                                 </div>
+                            </div>
+                            <div class="invoice-meta-bar">
+                                <span class="meta-item-left">Invoice No: #${invoiceData.invoice_number}</span>
+                                <span class="meta-item-right">Date: ${formatDate(invoiceData.invoice_date)}</span>
                             </div>
                         </div>
                     </div>
                     
-                    <!-- Invoice To Section -->
-                    <div class="invoice-to-section">
-                        <div class="invoice-to-header">
-                            <h3>Bill To</h3>
+                    <!-- Invoice To / Pay To Section -->
+                    <div class="invoice-payto-section">
+                        <div class="invoice-to-column">
+                            <h3 class="section-title">Invoice To:</h3>
+                            <div class="address-block">
+                                <p class="address-name">${invoiceData.customer_name || 'Walk-in Customer'}</p>
+                                ${invoiceData.address ? `<p class="address-line">${invoiceData.address}</p>` : ''}
+                                ${invoiceData.email ? `<p class="address-line">${invoiceData.email}</p>` : ''}
+                            </div>
                         </div>
-                        <div class="invoice-to-content">
-                            <div class="customer-info">
-                                <p class="customer-name">${invoiceData.customer_name || 'Walk-in Customer'}</p>
-                                ${invoiceData.email ? `<p class="customer-detail"><i class="fas fa-envelope"></i> ${invoiceData.email}</p>` : ''}
-                                ${invoiceData.phone ? `<p class="customer-detail"><i class="fas fa-phone"></i> ${invoiceData.phone}</p>` : ''}
-                                ${invoiceData.address ? `<p class="customer-detail"><i class="fas fa-map-marker-alt"></i> ${invoiceData.address}</p>` : ''}
+                        <div class="pay-to-column">
+                            <h3 class="section-title">Pay To:</h3>
+                            <div class="address-block">
+                                <p class="address-name">${shopSettings['shop_name'] || 'My Shop'}</p>
+                                ${shopSettings['shop_address'] ? `<p class="address-line">${shopSettings['shop_address']}</p>` : ''}
+                                ${shopSettings['shop_email'] ? `<p class="address-line">${shopSettings['shop_email']}</p>` : ''}
                             </div>
                         </div>
                     </div>
@@ -488,19 +502,19 @@ function formatDate($date) {
                     <div class="table-wrapper">
                         <table class="invoice-items-table-new">
                             <colgroup>
-                                <col class="col-item" style="width: 20%;">
-                                <col class="col-description" style="width: 35%;">
+                                <col class="col-item" style="width: 18%;">
+                                <col class="col-description" style="width: 42%;">
                                 <col class="col-price" style="width: 15%;">
                                 <col class="col-qty" style="width: 10%;">
-                                <col class="col-total" style="width: 20%;">
+                                <col class="col-total" style="width: 15%;">
                             </colgroup>
                             <thead>
                                 <tr>
                                     <th class="col-item">Item</th>
                                     <th class="col-description">Description</th>
-                                    <th class="col-price">Unit Price</th>
+                                    <th class="col-price">Price</th>
                                     <th class="col-qty">Qty</th>
-                                    <th class="col-total">Amount</th>
+                                    <th class="col-total">Total</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -509,17 +523,8 @@ function formatDate($date) {
                         </table>
                     </div>
                     
-                    <!-- Bottom Section: Summary and Payment Info -->
+                    <!-- Bottom Section: Summary -->
                     <div class="invoice-bottom-section">
-                        <div class="payment-info-section">
-                            <h4>Payment Information</h4>
-                            <div class="payment-details">
-                                <div class="payment-row">
-                                    <span class="payment-label">Payment Method:</span>
-                                    <span class="payment-value">${invoiceData.payment_method || 'Cash'}</span>
-                                </div>
-                            </div>
-                        </div>
                         <div class="summary-section">
                             <table class="summary-table">
                                 <tr>
@@ -534,8 +539,8 @@ function formatDate($date) {
                                 ` : ''}
                                 ${invoiceData.tax_rate > 0 ? `
                                 <tr>
-                                    <td class="summary-label">Tax ${invoiceData.tax_rate}%</td>
-                                    <td class="summary-value">${formatCurrency(invoiceData.tax_amount)}</td>
+                                    <td class="summary-label">Tax (${invoiceData.tax_rate}%)</td>
+                                    <td class="summary-value">+${formatCurrency(invoiceData.tax_amount)}</td>
                                 </tr>
                                 ` : ''}
                                 <tr class="grand-total-row">
@@ -543,25 +548,22 @@ function formatDate($date) {
                                     <td class="summary-value">${formatCurrency(invoiceData.total_amount)}</td>
                                 </tr>
                             </table>
-                            <div class="amount-in-words">
-                                <p><strong>Amount in Words:</strong> ${numberToWords(invoiceData.total_amount)}</p>
-                            </div>
                         </div>
                     </div>
                     
-                    <!-- Footer Section -->
-                    <div class="invoice-footer-new">
-                        <div class="footer-left">
-                            <p class="thank-you">Thank you for your business!</p>
-                            <p class="terms">We appreciate your trust and look forward to serving you again.</p>
+                    <!-- Signature Section -->
+                    <div class="signature-section">
+                        <div class="signature-block">
+                            <div class="signature-line"></div>
+                            <p class="signature-name">${shopSettings['shop_name'] || 'Shop Owner'}</p>
+                            <p class="signature-role">Accounts Manager</p>
                         </div>
-                        <div class="footer-right">
-                            <div class="signature-section">
-                                <div class="signature-line"></div>
-                                <p class="signature-label">Authorized Signature</p>
-                                <p class="signature-name">${shopSettings['shop_name'] || 'Shop Owner'}</p>
-                            </div>
-                        </div>
+                    </div>
+                    
+                    <!-- Terms & Conditions Footer -->
+                    <div class="terms-footer">
+                        <p class="terms-title"><strong>Terms & Conditions:</strong></p>
+                        <p class="terms-text">All claims relating to quantity or shipping errors shall be waived by Buyer unless made in writing to Seller within thirty (30) days after delivery of goods to the address stated.</p>
                     </div>
                 </div>
             `;
@@ -595,6 +597,12 @@ function formatDate($date) {
                 return;
             }
 
+            // Hide action buttons before PDF generation
+            const actionButtons = element.querySelectorAll('.invoice-actions, .action-icon-btn');
+            actionButtons.forEach(btn => {
+                btn.style.display = 'none';
+            });
+
             const filename = `Invoice_${invoiceData.invoice_number}.pdf`;
             
             const opt = {
@@ -615,7 +623,12 @@ function formatDate($date) {
                 }
             };
 
-            html2pdf().set(opt).from(element).save();
+            html2pdf().set(opt).from(element).save().then(() => {
+                // Restore buttons after PDF generation
+                actionButtons.forEach(btn => {
+                    btn.style.display = '';
+                });
+            });
         }
 
         // Load invoice on page load

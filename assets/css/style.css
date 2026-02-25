@@ -626,17 +626,14 @@ body {
     word-wrap: break-word;
 }
 
-/* New Header Design - Professional */
-.invoice-header-new {
+/* Top Header Design - Matching Reference */
+.invoice-top-header {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 2.5rem;
-    padding-bottom: 2rem;
-    border-bottom: 2px solid #e2e8f0;
+    margin-bottom: 1.5rem;
     width: 100%;
     box-sizing: border-box;
-    gap: 3rem;
 }
 
 .header-left {
@@ -645,60 +642,58 @@ body {
     box-sizing: border-box;
 }
 
-.company-logo {
+.company-logo-section {
     display: flex;
     align-items: flex-start;
-    gap: 1.25rem;
+    gap: 1rem;
 }
 
 .logo-placeholder {
-    width: 70px;
-    height: 70px;
-    background: linear-gradient(135deg, #3b82f6 0%, #1e3a8a 100%);
-    color: white;
-    border-radius: 10px;
+    width: 60px;
+    height: 60px;
+    background: transparent;
+    border: 2px solid #1e293b;
+    color: #1e293b;
+    border-radius: 4px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.75rem;
+    font-size: 1.5rem;
     font-weight: 700;
     flex-shrink: 0;
-    box-shadow: 0 4px 12px rgba(30, 58, 138, 0.2);
 }
 
-.company-info {
-    flex: 1;
+.company-info-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
 }
 
 .company-name {
-    font-size: 1.875rem;
+    font-size: 1.5rem;
     font-weight: 700;
-    color: #1e3a8a;
-    margin: 0 0 1rem 0;
+    color: #1e293b;
+    margin: 0;
     line-height: 1.2;
 }
 
-.company-details {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.company-detail {
-    margin: 0;
-    color: #64748b;
-    font-size: 0.9rem;
+.payment-method-section {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    line-height: 1.5;
+    margin-top: 0;
 }
 
-.company-detail i {
-    color: #1e3a8a;
-    font-size: 0.875rem;
-    width: 16px;
-    text-align: center;
+.payment-method-label {
+    color: #64748b;
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+.payment-method-value {
+    color: #64748b;
+    font-size: 0.9rem;
+    font-weight: 400;
 }
 
 .header-right {
@@ -706,55 +701,103 @@ body {
     flex-direction: column;
     align-items: flex-end;
     flex-shrink: 0;
-    min-width: 280px;
+    min-width: 300px;
     box-sizing: border-box;
 }
 
-.invoice-info-box {
-    text-align: right;
+.invoice-banner-wrapper {
+    position: relative;
     width: 100%;
+    margin-bottom: 4px;
+    overflow: visible;
 }
 
-.invoice-title {
+.invoice-banner {
+    background: #1e3a8a;
+    color: white;
+    padding: 1.75rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    position: relative;
+    margin-left: 30px;
+    clip-path: polygon(0 30px, 100% 0, 100% 100%, 0 100%);
+    -webkit-clip-path: polygon(0 30px, 100% 0, 100% 100%, 0 100%);
+}
+
+.invoice-title-banner {
     font-size: 2.5rem;
     font-weight: 700;
-    color: #1e3a8a;
-    margin: 0 0 1.5rem 0;
-    letter-spacing: 2px;
+    color: white;
+    margin: 0;
+    letter-spacing: 4px;
     text-transform: uppercase;
+    text-align: center;
+    flex: 1;
+    position: relative;
+    z-index: 1;
 }
 
-.invoice-details-list {
+.invoice-actions {
+    position: absolute;
+    right: 2rem;
+    top: 50%;
+    transform: translateY(-50%);
     display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    background: #f8fafc;
-    padding: 1.25rem 1.5rem;
-    border-radius: 8px;
-    border-left: 4px solid #1e3a8a;
+    gap: 0.5rem;
+    z-index: 2;
 }
 
-.invoice-detail-row {
+.action-icon-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: white;
+    border: none;
+    color: #1e3a8a;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+}
+
+.action-icon-btn:hover {
+    background: #f0f0f0;
+    transform: scale(1.05);
+}
+
+.invoice-meta-bar {
+    background: #1e3a8a;
+    color: white;
+    padding: 0.875rem 2rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 1.5rem;
-}
-
-.invoice-detail-label {
-    color: #64748b;
+    width: 100%;
     font-size: 0.9rem;
-    font-weight: 500;
-    min-width: 100px;
-    text-align: left;
+    margin-left: 30px;
+    position: relative;
+    clip-path: polygon(0 30px, 100% 0, 100% 100%, 0 100%);
+    -webkit-clip-path: polygon(0 30px, 100% 0, 100% 100%, 0 100%);
 }
 
-.invoice-detail-value {
-    color: #1e293b;
-    font-size: 0.95rem;
-    font-weight: 600;
+.meta-item-left,
+.meta-item-right {
+    color: white;
+    font-weight: 500;
+}
+
+.meta-item-left {
+    flex: 1;
+}
+
+.meta-item-right {
     text-align: right;
 }
+
 
 .total-parallelogram {
     background: #1e3a8a !important;
@@ -787,62 +830,49 @@ body {
     margin: 0;
 }
 
-/* Invoice To Section - Professional */
-.invoice-to-section {
-    margin-bottom: 2.5rem;
-    background: #f8fafc;
-    border-radius: 8px;
-    padding: 1.5rem;
-    border-left: 4px solid #1e3a8a;
-}
-
-.invoice-to-header {
-    margin-bottom: 1.25rem;
-}
-
-.invoice-to-header h3 {
-    font-size: 1rem;
-    font-weight: 700;
-    color: #1e3a8a;
-    margin: 0;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
-
-.invoice-to-content {
+/* Invoice To / Pay To Section - Two Columns */
+.invoice-payto-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3rem;
+    margin-bottom: 2rem;
     width: 100%;
     box-sizing: border-box;
 }
 
-.customer-info {
+.invoice-to-column,
+.pay-to-column {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.section-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0 0 1rem 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.address-block {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 0.5rem;
 }
 
-.customer-name {
-    font-size: 1.125rem;
+.address-name {
+    font-size: 1rem;
     font-weight: 600;
     color: #1e293b;
-    margin: 0 0 0.5rem 0;
-}
-
-.customer-detail {
     margin: 0;
-    color: #64748b;
-    font-size: 0.9rem;
-    display: flex;
-    align-items: flex-start;
-    gap: 0.5rem;
-    line-height: 1.6;
 }
 
-.customer-detail i {
-    color: #1e3a8a;
-    font-size: 0.875rem;
-    margin-top: 0.25rem;
-    width: 16px;
-    flex-shrink: 0;
+.address-line {
+    font-size: 0.9rem;
+    color: #64748b;
+    margin: 0;
+    line-height: 1.6;
 }
 
 /* Table Wrapper */
@@ -882,7 +912,7 @@ body {
 }
 
 .invoice-items-table-new colgroup col.col-description {
-    width: 35%;
+    width: 42%;
 }
 
 .invoice-items-table-new colgroup col.col-price {
@@ -894,7 +924,7 @@ body {
 }
 
 .invoice-items-table-new colgroup col.col-total {
-    width: 22%;
+    width: 15%;
 }
 
 .invoice-items-table-new thead {
@@ -1079,56 +1109,42 @@ body {
 
 /* Bottom Section */
 .invoice-bottom-section {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 3rem;
+    display: flex;
+    justify-content: flex-end;
     margin-top: 2rem;
     margin-bottom: 2.5rem;
     width: 100%;
     box-sizing: border-box;
-    align-items: start;
 }
 
 .payment-info-section {
-    background: #f8fafc;
-    padding: 1.5rem;
-    border-radius: 8px;
-    border-left: 4px solid #1e3a8a;
     width: 100%;
     box-sizing: border-box;
 }
 
-.payment-info-section h4 {
-    color: #1e3a8a;
-    font-size: 0.9rem;
+.payment-info-title {
+    color: #1e293b;
+    font-size: 0.95rem;
     font-weight: 700;
-    margin: 0 0 1.25rem 0;
-    text-transform: uppercase;
-    letter-spacing: 1px;
+    margin: 0 0 1rem 0;
+    text-transform: capitalize;
 }
 
 .payment-details {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 0.5rem;
 }
 
-.payment-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.5rem 0;
-}
-
-.payment-label {
-    color: #64748b;
-    font-size: 0.9rem;
-    font-weight: 500;
-}
-
-.payment-value {
+.payment-detail-line {
+    margin: 0;
     color: #1e293b;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
+    line-height: 1.6;
+}
+
+.payment-detail-line strong {
+    color: #1e293b;
     font-weight: 600;
 }
 
@@ -1136,13 +1152,15 @@ body {
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
-    width: 100%;
+    width: auto;
+    min-width: 400px;
+    max-width: 500px;
     box-sizing: border-box;
     align-items: flex-end;
 }
 
 .amount-in-words {
-    margin-top: 1.5rem;
+    margin-top: 1rem;
     padding: 1rem 1.5rem;
     background: #f8fafc;
     border-radius: 6px;
@@ -1222,66 +1240,64 @@ body {
     padding: 16px;
 }
 
-/* Footer */
-.invoice-footer-new {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-top: 2.5rem;
-    padding-top: 1.5rem;
-    border-top: 2px solid #e2e8f0;
-}
-
-.footer-left {
-    flex: 1;
-}
-
-.thank-you {
-    color: #1e3a8a;
-    font-weight: 700;
-    font-size: 1.1rem;
-    margin: 0 0 0.75rem 0;
-}
-
-.terms {
-    color: #64748b;
-    font-size: 0.85rem;
-    margin: 0;
-    line-height: 1.7;
-    max-width: 500px;
-}
-
-.footer-right {
-    display: flex;
-    align-items: flex-end;
-    gap: 2rem;
-}
-
+/* Signature Section */
 .signature-section {
+    margin-top: 3rem;
+    margin-bottom: 2rem;
+    display: flex;
+    justify-content: flex-end;
+    width: 100%;
+}
+
+.signature-block {
     text-align: right;
     min-width: 200px;
 }
 
 .signature-line {
     width: 200px;
-    height: 1px;
+    height: 2px;
     background: #cbd5e1;
-    margin: 0 0 0.75rem auto;
-}
-
-.signature-label {
-    font-size: 0.75rem;
-    color: #94a3b8;
-    margin: 0 0 0.5rem 0;
-    text-transform: uppercase;
-    letter-spacing: 1px;
+    margin: 0 0 0.5rem auto;
 }
 
 .signature-name {
     font-weight: 600;
     color: #1e293b;
-    margin: 0.25rem 0;
+    margin: 0.25rem 0 0.25rem 0;
     font-size: 0.95rem;
+}
+
+.signature-role {
+    color: #64748b;
+    font-size: 0.85rem;
+    margin: 0;
+}
+
+/* Terms & Conditions Footer */
+.terms-footer {
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid #e2e8f0;
+    text-align: center;
+    width: 100%;
+}
+
+.terms-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0 0 0.5rem 0;
+}
+
+.terms-text {
+    font-size: 0.85rem;
+    color: #64748b;
+    margin: 0;
+    line-height: 1.7;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .signature-role {
@@ -1724,7 +1740,9 @@ body {
     .top-bar,
     .modal-actions,
     .btn,
-    .modal-close {
+    .modal-close,
+    .invoice-actions,
+    .action-icon-btn {
         display: none !important;
     }
 
