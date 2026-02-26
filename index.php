@@ -467,10 +467,13 @@ requireLogin(); // Redirect to login if not logged in
             <!-- New Invoice Page -->
             <div class="page" id="new-invoice-page" style="display: none;">
                 <div class="page-header">
-                    <h2>Create New Invoice</h2>
+                    <div>
+                        <h2 id="invoice-page-title">Create New Invoice</h2>
+                    </div>
                 </div>
                 <div class="invoice-form-container">
                     <form id="invoice-form" class="invoice-form">
+                        <input type="hidden" id="invoice-id">
                         <div class="form-row">
                             <div class="form-group">
                                 <label>Customer *</label>
@@ -556,7 +559,7 @@ requireLogin(); // Redirect to login if not logged in
 
                         <div class="form-actions">
                             <button type="button" class="btn btn-secondary" onclick="navigateToPage('invoices')">Cancel</button>
-                            <button type="submit" class="btn btn-primary">Create Invoice</button>
+                            <button type="submit" class="btn btn-primary" id="invoice-submit-btn">Create Invoice</button>
                         </div>
                     </form>
                 </div>

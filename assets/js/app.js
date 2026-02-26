@@ -1000,6 +1000,9 @@ function displayInvoices(invoices) {
                     <button class="action-btn view" onclick="viewInvoice(${invoice.id})" title="View">
                         <i class="fas fa-eye"></i>
                     </button>
+                    <button class="action-btn edit" onclick="editInvoice(${invoice.id})" title="Edit">
+                        <i class="fas fa-edit"></i>
+                    </button>
                     <button class="action-btn delete" onclick="deleteInvoice(${invoice.id})" title="Delete">
                         <i class="fas fa-trash"></i>
                     </button>
@@ -1022,8 +1025,11 @@ function getStatusBadgeClass(status) {
 function loadNewInvoice() {
     invoiceItems = [];
     document.getElementById('invoice-form').reset();
+    document.getElementById('invoice-id').value = '';
     document.getElementById('invoice-date').value = new Date().toISOString().split('T')[0];
     document.getElementById('invoice-items-body').innerHTML = '';
+    document.getElementById('invoice-page-title').textContent = 'Create New Invoice';
+    document.getElementById('invoice-submit-btn').textContent = 'Create Invoice';
     calculateInvoiceTotal();
     loadCustomers();
     loadProducts();
@@ -1137,6 +1143,9 @@ async function handleInvoiceSubmit(e) {
     const taxAmount = (subtotal * taxRate) / 100;
     const total = subtotal + taxAmount - discount;
     
+    const invoiceId = document.getElementById('invoice-id').value;
+    const isEdit = invoiceId !== '';
+    
     const data = {
         customer_id: document.getElementById('invoice-customer').value || null,
         invoice_date: document.getElementById('invoice-date').value,
@@ -1152,9 +1161,13 @@ async function handleInvoiceSubmit(e) {
         items: invoiceItems
     };
     
+    if (isEdit) {
+        data.id = parseInt(invoiceId);
+    }
+    
     try {
         const response = await fetch(`${API_BASE}/invoices.php`, {
-            method: 'POST',
+            method: isEdit ? 'PUT' : 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
         });
@@ -1162,14 +1175,14 @@ async function handleInvoiceSubmit(e) {
         const result = await response.json();
         
         if (result.success) {
-            showNotification('Invoice created successfully', 'success');
+            showNotification(isEdit ? 'Invoice updated successfully' : 'Invoice created successfully', 'success');
             navigateToPage('invoices');
         } else {
-            showNotification(result.error || 'Error creating invoice', 'error');
+            showNotification(result.error || (isEdit ? 'Error updating invoice' : 'Error creating invoice'), 'error');
         }
     } catch (error) {
-        console.error('Error creating invoice:', error);
-        showNotification('Error creating invoice', 'error');
+        console.error('Error saving invoice:', error);
+        showNotification(isEdit ? 'Error updating invoice' : 'Error creating invoice', 'error');
     }
 }
 
@@ -1177,6 +1190,66 @@ async function handleInvoiceSubmit(e) {
 function viewInvoice(id) {
     // Open invoice preview in a new tab
     window.open(`invoice-preview.php?id=${id}`, '_blank');
+}
+
+// Edit Invoice
+async function editInvoice(id) {
+    try {
+        // Navigate to new invoice page
+        navigateToPage('new-invoice');
+        
+        // Update page title
+        document.getElementById('invoice-page-title').textContent = 'Edit Invoice';
+        document.getElementById('invoice-submit-btn').textContent = 'Update Invoice';
+        
+        // Load invoice data
+        const response = await fetch(`${API_BASE}/invoices.php?id=${id}`);
+        const invoice = await response.json();
+        
+        if (invoice.error) {
+            showNotification('Invoice not found', 'error');
+            return;
+        }
+        
+        // Set invoice ID
+        document.getElementById('invoice-id').value = invoice.id;
+        
+        // Load customers if not already loaded
+        if (customers.length === 0) {
+            await loadCustomers();
+        }
+        
+        // Populate form fields
+        document.getElementById('invoice-customer').value = invoice.customer_id || '';
+        document.getElementById('invoice-date').value = invoice.invoice_date;
+        document.getElementById('invoice-due-date').value = invoice.due_date || '';
+        document.getElementById('invoice-tax-rate').value = invoice.tax_rate || 18;
+        document.getElementById('invoice-discount').value = invoice.discount || 0;
+        document.getElementById('invoice-payment-status').value = invoice.payment_status || 'pending';
+        document.getElementById('invoice-payment-method').value = invoice.payment_method || '';
+        document.getElementById('invoice-notes').value = invoice.notes || '';
+        
+        // Load products if not already loaded
+        if (products.length === 0) {
+            await loadProducts();
+        }
+        
+        // Populate invoice items
+        invoiceItems = (invoice.items || []).map(item => ({
+            product_id: item.product_id,
+            product_name: item.product_name,
+            quantity: parseInt(item.quantity),
+            unit_price: parseFloat(item.unit_price),
+            total_price: parseFloat(item.total_price)
+        }));
+        
+        renderInvoiceItems();
+        calculateInvoiceTotal();
+        
+    } catch (error) {
+        console.error('Error loading invoice:', error);
+        showNotification('Error loading invoice', 'error');
+    }
 }
 
 function displayInvoiceView(invoice) {

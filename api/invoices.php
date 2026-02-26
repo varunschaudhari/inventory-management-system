@@ -160,7 +160,7 @@ switch ($method) {
         break;
         
     case 'PUT':
-        // Update invoice
+        // Update invoice with items
         $data = json_decode(file_get_contents('php://input'), true);
         $id = intval($data['id'] ?? 0);
         
@@ -175,15 +175,66 @@ switch ($method) {
         $payment_status = $data['payment_status'] ?? 'pending';
         $payment_method = $data['payment_method'] ?? '';
         $notes = $data['notes'] ?? '';
+        $items = $data['items'] ?? [];
         
-        $stmt = $conn->prepare("UPDATE invoices SET customer_id = ?, invoice_date = ?, due_date = ?, subtotal = ?, tax_rate = ?, tax_amount = ?, discount = ?, total_amount = ?, payment_status = ?, payment_method = ?, notes = ? WHERE id = ?");
-        $stmt->bind_param("issddddssssi", $customer_id, $invoice_date, $due_date, $subtotal, $tax_rate, $tax_amount, $discount, $total_amount, $payment_status, $payment_method, $notes, $id);
+        // Start transaction
+        $conn->autocommit(FALSE);
         
-        if ($stmt->execute()) {
+        try {
+            // Update invoice header
+            $stmt = $conn->prepare("UPDATE invoices SET customer_id = ?, invoice_date = ?, due_date = ?, subtotal = ?, tax_rate = ?, tax_amount = ?, discount = ?, total_amount = ?, payment_status = ?, payment_method = ?, notes = ? WHERE id = ?");
+            $stmt->bind_param("issddddssssi", $customer_id, $invoice_date, $due_date, $subtotal, $tax_rate, $tax_amount, $discount, $total_amount, $payment_status, $payment_method, $notes, $id);
+            $stmt->execute();
+            
+            // Get old invoice items to restore quantities
+            $stmt = $conn->prepare("SELECT product_id, quantity FROM invoice_items WHERE invoice_id = ?");
+            $stmt->bind_param("i", $id);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $oldItems = [];
+            while ($row = $result->fetch_assoc()) {
+                $oldItems[$row['product_id']] = $row['quantity'];
+            }
+            
+            // Restore old quantities
+            foreach ($oldItems as $product_id => $quantity) {
+                $stmt = $conn->prepare("UPDATE products SET quantity = quantity + ? WHERE id = ?");
+                $stmt->bind_param("ii", $quantity, $product_id);
+                $stmt->execute();
+            }
+            
+            // Delete old invoice items
+            $stmt = $conn->prepare("DELETE FROM invoice_items WHERE invoice_id = ?");
+            $stmt->bind_param("i", $id);
+            $stmt->execute();
+            
+            // Insert new invoice items and update product quantities
+            foreach ($items as $item) {
+                $product_id = intval($item['product_id']);
+                $product_name = $item['product_name'];
+                $quantity = intval($item['quantity']);
+                $unit_price = floatval($item['unit_price']);
+                $total_price = floatval($item['total_price']);
+                
+                // Insert invoice item
+                $stmt2 = $conn->prepare("INSERT INTO invoice_items (invoice_id, product_id, product_name, quantity, unit_price, total_price) VALUES (?, ?, ?, ?, ?, ?)");
+                $stmt2->bind_param("iisidd", $id, $product_id, $product_name, $quantity, $unit_price, $total_price);
+                $stmt2->execute();
+                
+                // Update product quantity (deduct new quantity)
+                $stmt3 = $conn->prepare("UPDATE products SET quantity = quantity - ? WHERE id = ?");
+                $stmt3->bind_param("ii", $quantity, $product_id);
+                $stmt3->execute();
+            }
+            
+            $conn->commit();
             echo json_encode(['success' => true]);
-        } else {
-            echo json_encode(['success' => false, 'error' => $stmt->error]);
+        } catch (Exception $e) {
+            $conn->rollback();
+            echo json_encode(['success' => false, 'error' => $e->getMessage()]);
         }
+        
+        $conn->autocommit(TRUE);
         break;
         
     case 'DELETE':
