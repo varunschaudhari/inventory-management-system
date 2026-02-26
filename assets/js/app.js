@@ -123,20 +123,70 @@ function setupEventListeners() {
     
     document.getElementById('category-filter')?.addEventListener('change', loadProducts);
     document.getElementById('invoice-status-filter')?.addEventListener('change', loadInvoices);
+    
+    // View All links on dashboard
+    document.querySelectorAll('.view-all').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const page = this.getAttribute('data-page');
+            if (page) {
+                navigateToPage(page);
+            }
+        });
+    });
 }
 
 // Dashboard
+let salesTrendChart = null;
+let paymentStatusChart = null;
+
 async function loadDashboard() {
     try {
         const response = await fetch(`${API_BASE}/stats.php`);
         const stats = await response.json();
         
+        // Update stat cards
         document.getElementById('stat-products').textContent = stats.total_products || 0;
         document.getElementById('stat-low-stock').textContent = stats.low_stock_products || 0;
+        document.getElementById('stat-out-of-stock').textContent = stats.out_of_stock || 0;
         document.getElementById('stat-customers').textContent = stats.total_customers || 0;
         document.getElementById('stat-invoices').textContent = stats.total_invoices || 0;
         document.getElementById('stat-revenue').textContent = formatCurrency(stats.total_revenue || 0);
         document.getElementById('stat-pending').textContent = stats.pending_invoices || 0;
+        document.getElementById('stat-today-sales').textContent = formatCurrency(stats.today_sales || 0);
+        document.getElementById('stat-month-sales').textContent = formatCurrency(stats.month_sales || 0);
+        
+        // Month comparison
+        const monthComparison = document.getElementById('stat-month-comparison');
+        if (stats.last_month_sales && stats.last_month_sales > 0) {
+            const change = ((stats.month_sales - stats.last_month_sales) / stats.last_month_sales * 100).toFixed(1);
+            const isPositive = change >= 0;
+            monthComparison.textContent = `${isPositive ? '+' : ''}${change}% vs last month`;
+            monthComparison.style.color = isPositive ? '#10b981' : '#ef4444';
+        }
+        
+        // Sales Overview
+        document.getElementById('sales-today').textContent = formatCurrency(stats.today_sales || 0);
+        document.getElementById('sales-month').textContent = formatCurrency(stats.month_sales || 0);
+        document.getElementById('sales-avg').textContent = formatCurrency(stats.avg_invoice_value || 0);
+        document.getElementById('sales-paid').textContent = stats.paid_invoices || 0;
+        
+        // Month comparison in sales overview
+        const salesMonthChange = document.getElementById('sales-month-change');
+        if (stats.last_month_sales && stats.last_month_sales > 0) {
+            const change = ((stats.month_sales - stats.last_month_sales) / stats.last_month_sales * 100).toFixed(1);
+            const isPositive = change >= 0;
+            salesMonthChange.innerHTML = `<span style="color: ${isPositive ? '#10b981' : '#ef4444'}">
+                <i class="fas fa-arrow-${isPositive ? 'up' : 'down'}" style="font-size: 0.75rem;"></i> ${Math.abs(change)}%
+            </span>`;
+        }
+        
+        // Render charts
+        renderSalesTrendChart(stats.sales_trend || []);
+        renderPaymentStatusChart(stats.payment_breakdown || {});
+        
+        // Display top products
+        displayTopProducts(stats.top_products || []);
         
         // Load recent invoices
         const invoicesResponse = await fetch(`${API_BASE}/invoices.php?limit=5`);
@@ -152,6 +202,133 @@ async function loadDashboard() {
         console.error('Error loading dashboard:', error);
         showNotification('Error loading dashboard data', 'error');
     }
+}
+
+function renderSalesTrendChart(salesData) {
+    const ctx = document.getElementById('salesTrendCanvas');
+    if (!ctx) return;
+    
+    // Destroy existing chart if it exists
+    if (salesTrendChart) {
+        salesTrendChart.destroy();
+    }
+    
+    const labels = salesData.map(item => {
+        const date = new Date(item.date);
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    });
+    const amounts = salesData.map(item => item.amount || 0);
+    
+    salesTrendChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Sales (₹)',
+                data: amounts,
+                borderColor: '#2563eb',
+                backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                tension: 0.4,
+                fill: true,
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '₹' + value.toLocaleString();
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+function renderPaymentStatusChart(paymentData) {
+    const ctx = document.getElementById('paymentStatusCanvas');
+    if (!ctx) return;
+    
+    // Destroy existing chart if it exists
+    if (paymentStatusChart) {
+        paymentStatusChart.destroy();
+    }
+    
+    const labels = Object.keys(paymentData);
+    const data = Object.values(paymentData);
+    const colors = {
+        'paid': '#10b981',
+        'pending': '#f59e0b',
+        'partial': '#3b82f6'
+    };
+    
+    const backgroundColors = labels.map(label => colors[label] || '#6b7280');
+    
+    paymentStatusChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: labels.map(l => l.charAt(0).toUpperCase() + l.slice(1)),
+            datasets: [{
+                data: data,
+                backgroundColor: backgroundColors,
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+    
+    // Create custom legend
+    const legendContainer = document.getElementById('payment-status-legend');
+    if (legendContainer) {
+        legendContainer.innerHTML = labels.map((label, index) => `
+            <div class="legend-item">
+                <span class="legend-color" style="background-color: ${backgroundColors[index]}"></span>
+                <span class="legend-label">${label.charAt(0).toUpperCase() + label.slice(1)}</span>
+                <span class="legend-value">${data[index]}</span>
+            </div>
+        `).join('');
+    }
+}
+
+function displayTopProducts(products) {
+    const container = document.getElementById('top-products-list');
+    if (!container) return;
+    
+    if (products.length === 0) {
+        container.innerHTML = '<p style="color: var(--text-light); text-align: center; padding: 1rem;">No sales data available</p>';
+        return;
+    }
+    
+    container.innerHTML = products.map((product, index) => `
+        <div class="top-product-item">
+            <div class="product-rank">${index + 1}</div>
+            <div class="product-info">
+                <div class="product-name">${product.name}</div>
+                <div class="product-stats">
+                    <span><i class="fas fa-shopping-cart"></i> ${product.quantity} sold</span>
+                    <span><i class="fas fa-rupee-sign"></i> ${formatCurrency(product.revenue)}</span>
+                </div>
+            </div>
+        </div>
+    `).join('');
 }
 
 function displayRecentInvoices(invoices) {
