@@ -106,7 +106,7 @@ switch ($method) {
         $status = $data['status'] ?? 'active';
         
         $stmt = $conn->prepare("UPDATE products SET product_name = ?, product_code = ?, category = ?, description = ?, quantity = ?, unit_price = ?, cost_price = ?, unit = ?, min_stock_level = ?, status = ? WHERE id = ?");
-        $stmt->bind_param("ssssiddssisi", $product_name, $product_code, $category, $description, $quantity, $unit_price, $cost_price, $unit, $min_stock_level, $status, $id);
+        $stmt->bind_param("ssssiddsisi", $product_name, $product_code, $category, $description, $quantity, $unit_price, $cost_price, $unit, $min_stock_level, $status, $id);
         
         if ($stmt->execute()) {
             echo json_encode(['success' => true]);

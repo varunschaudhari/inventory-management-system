@@ -308,32 +308,97 @@ requireLogin(); // Redirect to login if not logged in
             <!-- Products Page -->
             <div class="page" id="products-page" style="display: none;">
                 <div class="page-header">
-                    <h2>Products</h2>
+                    <div>
+                        <h2>Products</h2>
+                        <p class="page-subtitle" id="products-count">0 products</p>
+                    </div>
                     <button class="btn btn-primary" onclick="openProductModal()">
                         <i class="fas fa-plus"></i> Add Product
                     </button>
                 </div>
-                <div class="filters">
-                    <input type="text" id="product-search" placeholder="Search products..." class="search-input">
-                    <select id="category-filter" class="filter-select">
-                        <option value="">All Categories</option>
-                    </select>
+
+                <!-- Advanced Filters Section -->
+                <div class="products-filters-card">
+                    <div class="filters-row">
+                        <div class="filter-group">
+                            <i class="fas fa-search filter-icon"></i>
+                            <input type="text" id="product-search" placeholder="Search by name, code, or category..." class="search-input-advanced">
+                        </div>
+                        <div class="filter-group">
+                            <select id="category-filter" class="filter-select-advanced">
+                                <option value="">All Categories</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <select id="stock-status-filter" class="filter-select-advanced">
+                                <option value="">All Stock Status</option>
+                                <option value="in_stock">In Stock</option>
+                                <option value="low_stock">Low Stock</option>
+                                <option value="out_of_stock">Out of Stock</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <select id="product-status-filter" class="filter-select-advanced">
+                                <option value="">All Status</option>
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-secondary" onclick="clearProductFilters()" title="Clear Filters">
+                            <i class="fas fa-times"></i> Clear
+                        </button>
+                    </div>
                 </div>
-                <div class="table-container">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Code</th>
-                                <th>Product Name</th>
-                                <th>Category</th>
-                                <th>Quantity</th>
-                                <th>Unit Price</th>
-                                <th>Stock Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="products-table-body"></tbody>
-                    </table>
+
+                <!-- View Toggle and Actions -->
+                <div class="products-toolbar">
+                    <div class="view-toggle">
+                        <button class="view-btn" id="grid-view-btn" onclick="switchProductView('grid')" title="Grid View">
+                            <i class="fas fa-th"></i>
+                        </button>
+                        <button class="view-btn active" id="list-view-btn" onclick="switchProductView('list')" title="List View">
+                            <i class="fas fa-list"></i>
+                        </button>
+                    </div>
+                    <div class="products-actions">
+                        <button class="btn btn-secondary" onclick="exportProducts()" title="Export Products">
+                            <i class="fas fa-download"></i> Export
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Products Grid View -->
+                <div id="products-grid-view" class="products-grid-container" style="display: none;">
+                    <div class="products-grid" id="products-grid"></div>
+                </div>
+
+                <!-- Products List View -->
+                <div id="products-list-view" class="products-list-container">
+                    <div class="table-container">
+                        <table class="data-table products-table">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Category</th>
+                                    <th>Stock</th>
+                                    <th>Price</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="products-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Empty State -->
+                <div id="products-empty-state" class="empty-state" style="display: none;">
+                    <i class="fas fa-box-open"></i>
+                    <h3>No products found</h3>
+                    <p>Try adjusting your filters or add a new product</p>
+                    <button class="btn btn-primary" onclick="openProductModal()">
+                        <i class="fas fa-plus"></i> Add Product
+                    </button>
                 </div>
             </div>
 

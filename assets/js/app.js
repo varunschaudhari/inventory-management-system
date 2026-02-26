@@ -141,6 +141,8 @@ function setupEventListeners() {
     document.getElementById('invoice-search')?.addEventListener('input', debounce(loadInvoices, 300));
     
     document.getElementById('category-filter')?.addEventListener('change', loadProducts);
+    document.getElementById('stock-status-filter')?.addEventListener('change', loadProducts);
+    document.getElementById('product-status-filter')?.addEventListener('change', loadProducts);
     document.getElementById('invoice-status-filter')?.addEventListener('change', loadInvoices);
     
     // View All links on dashboard
@@ -393,10 +395,15 @@ function displayLowStockProducts(products) {
 }
 
 // Products
+// Product view state
+let currentProductView = 'list';
+
 async function loadProducts() {
     try {
         const search = document.getElementById('product-search')?.value || '';
         const category = document.getElementById('category-filter')?.value || '';
+        const stockStatus = document.getElementById('stock-status-filter')?.value || '';
+        const productStatus = document.getElementById('product-status-filter')?.value || '';
         
         let url = `${API_BASE}/products.php`;
         const params = new URLSearchParams();
@@ -405,10 +412,27 @@ async function loadProducts() {
         if (params.toString()) url += '?' + params.toString();
         
         const response = await fetch(url);
-        products = await response.json();
+        let allProducts = await response.json();
+        
+        // Apply client-side filters
+        let filteredProducts = allProducts;
+        if (stockStatus) {
+            filteredProducts = filteredProducts.filter(p => {
+                if (stockStatus === 'in_stock') return p.quantity > p.min_stock_level && p.quantity > 0;
+                if (stockStatus === 'low_stock') return p.quantity <= p.min_stock_level && p.quantity > 0;
+                if (stockStatus === 'out_of_stock') return p.quantity === 0;
+                return true;
+            });
+        }
+        if (productStatus) {
+            filteredProducts = filteredProducts.filter(p => p.status === productStatus);
+        }
+        
+        products = filteredProducts;
         
         displayProducts(products);
-        updateCategoryFilter(products);
+        updateCategoryFilter(allProducts);
+        updateProductsCount(products.length);
     } catch (error) {
         console.error('Error loading products:', error);
         showNotification('Error loading products', 'error');
@@ -416,20 +440,67 @@ async function loadProducts() {
 }
 
 function displayProducts(products) {
-    const tbody = document.getElementById('products-table-body');
-    if (products.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem; color: var(--text-light);">No products found</td></tr>';
+    const isEmpty = products.length === 0;
+    const emptyState = document.getElementById('products-empty-state');
+    const gridView = document.getElementById('products-grid-view');
+    const listView = document.getElementById('products-list-view');
+    
+    if (isEmpty) {
+        emptyState.style.display = 'block';
+        gridView.style.display = 'none';
+        listView.style.display = 'none';
         return;
     }
     
+    emptyState.style.display = 'none';
+    
+    if (currentProductView === 'grid') {
+        displayProductsGrid(products);
+        gridView.style.display = 'block';
+        listView.style.display = 'none';
+    } else {
+        displayProductsList(products);
+        gridView.style.display = 'none';
+        listView.style.display = 'block';
+    }
+}
+
+function displayProductsGrid(products) {
+    const container = document.getElementById('products-grid');
+    if (!container) return;
+    
+    container.innerHTML = products.map(product => createProductCard(product)).join('');
+}
+
+function displayProductsList(products) {
+    const tbody = document.getElementById('products-table-body');
+    if (!tbody) return;
+    
     tbody.innerHTML = products.map(product => `
         <tr>
-            <td>${product.product_code || 'N/A'}</td>
-            <td><strong>${product.product_name}</strong></td>
-            <td>${product.category || 'N/A'}</td>
-            <td>${product.quantity} ${product.unit}</td>
-            <td>${formatCurrency(product.unit_price)}</td>
-            <td>${getStockStatusBadge(product)}</td>
+            <td>
+                <div class="product-list-item">
+                    <div class="product-list-info">
+                        <strong class="product-list-name">${product.product_name}</strong>
+                        ${product.product_code ? `<span class="product-list-code">${product.product_code}</span>` : ''}
+                    </div>
+                </div>
+            </td>
+            <td>
+                ${product.category ? `<span class="category-badge">${product.category}</span>` : '<span class="text-muted">N/A</span>'}
+            </td>
+            <td>
+                <div class="stock-info-list">
+                    <span class="stock-quantity">${product.quantity} ${product.unit}</span>
+                    ${getStockIndicator(product)}
+                </div>
+            </td>
+            <td>
+                <strong class="price-text">${formatCurrency(product.unit_price)}</strong>
+            </td>
+            <td>
+                ${getProductStatusBadge(product)}
+            </td>
             <td>
                 <div class="action-buttons">
                     <button class="action-btn edit" onclick="editProduct(${product.id})" title="Edit">
@@ -442,6 +513,130 @@ function displayProducts(products) {
             </td>
         </tr>
     `).join('');
+}
+
+function createProductCard(product) {
+    const stockPercentage = product.min_stock_level > 0 
+        ? Math.min(100, (product.quantity / (product.min_stock_level * 2)) * 100)
+        : (product.quantity > 0 ? 100 : 0);
+    
+    const stockClass = product.quantity === 0 ? 'out-of-stock' : 
+                      product.quantity <= product.min_stock_level ? 'low-stock' : 'in-stock';
+    
+    return `
+        <div class="product-card ${stockClass}" data-product-id="${product.id}">
+            <div class="product-card-header">
+                <div class="product-status-indicator ${product.status === 'active' ? 'active' : 'inactive'}"></div>
+                <div class="product-card-actions">
+                    <button class="product-action-btn" onclick="editProduct(${product.id})" title="Edit">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="product-action-btn delete" onclick="deleteProduct(${product.id})" title="Delete">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="product-card-body">
+                <div class="product-card-title">
+                    <h3 class="product-name">${product.product_name}</h3>
+                    ${product.product_code ? `<span class="product-code">${product.product_code}</span>` : ''}
+                </div>
+                ${product.category ? `<div class="product-category"><i class="fas fa-tag"></i> ${product.category}</div>` : ''}
+                ${product.description ? `<p class="product-description">${product.description.substring(0, 80)}${product.description.length > 80 ? '...' : ''}</p>` : ''}
+            </div>
+            <div class="product-card-footer">
+                <div class="product-stock-section">
+                    <div class="stock-header">
+                        <span class="stock-label">Stock</span>
+                        <span class="stock-value">${product.quantity} ${product.unit}</span>
+                    </div>
+                    <div class="stock-bar">
+                        <div class="stock-bar-fill ${stockClass}" style="width: ${stockPercentage}%"></div>
+                    </div>
+                    ${product.min_stock_level > 0 ? `<div class="stock-min">Min: ${product.min_stock_level} ${product.unit}</div>` : ''}
+                </div>
+                <div class="product-price-section">
+                    <div class="price-label">Price</div>
+                    <div class="price-value">${formatCurrency(product.unit_price)}</div>
+                    ${product.cost_price ? `<div class="cost-price">Cost: ${formatCurrency(product.cost_price)}</div>` : ''}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function switchProductView(view) {
+    currentProductView = view;
+    const gridBtn = document.getElementById('grid-view-btn');
+    const listBtn = document.getElementById('list-view-btn');
+    
+    if (view === 'grid') {
+        gridBtn.classList.add('active');
+        listBtn.classList.remove('active');
+    } else {
+        listBtn.classList.add('active');
+        gridBtn.classList.remove('active');
+    }
+    
+    displayProducts(products);
+}
+
+function clearProductFilters() {
+    document.getElementById('product-search').value = '';
+    document.getElementById('category-filter').value = '';
+    document.getElementById('stock-status-filter').value = '';
+    document.getElementById('product-status-filter').value = '';
+    loadProducts();
+}
+
+function updateProductsCount(count) {
+    const countEl = document.getElementById('products-count');
+    if (countEl) {
+        countEl.textContent = `${count} product${count !== 1 ? 's' : ''}`;
+    }
+}
+
+function getStockIndicator(product) {
+    if (product.quantity === 0) {
+        return '<span class="stock-indicator out-of-stock"><i class="fas fa-times-circle"></i></span>';
+    } else if (product.quantity <= product.min_stock_level) {
+        return '<span class="stock-indicator low-stock"><i class="fas fa-exclamation-triangle"></i></span>';
+    }
+    return '<span class="stock-indicator in-stock"><i class="fas fa-check-circle"></i></span>';
+}
+
+function getProductStatusBadge(product) {
+    if (product.status === 'active') {
+        return '<span class="badge badge-success">Active</span>';
+    }
+    return '<span class="badge badge-danger">Inactive</span>';
+}
+
+function exportProducts() {
+    // Simple CSV export
+    const csv = [
+        ['Code', 'Name', 'Category', 'Quantity', 'Unit', 'Price', 'Cost Price', 'Min Stock', 'Status'].join(','),
+        ...products.map(p => [
+            p.product_code || '',
+            `"${p.product_name}"`,
+            p.category || '',
+            p.quantity,
+            p.unit || 'pcs',
+            p.unit_price,
+            p.cost_price || '',
+            p.min_stock_level || 0,
+            p.status
+        ].join(','))
+    ].join('\n');
+    
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `products_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+    showNotification('Products exported successfully', 'success');
 }
 
 function updateCategoryFilter(products) {
@@ -458,10 +653,10 @@ function updateCategoryFilter(products) {
 }
 
 function getStockStatusBadge(product) {
-    if (product.quantity <= product.min_stock_level) {
-        return '<span class="badge badge-danger">Low Stock</span>';
-    } else if (product.quantity === 0) {
+    if (product.quantity === 0) {
         return '<span class="badge badge-danger">Out of Stock</span>';
+    } else if (product.quantity <= product.min_stock_level) {
+        return '<span class="badge badge-warning">Low Stock</span>';
     } else {
         return '<span class="badge badge-success">In Stock</span>';
     }
@@ -532,7 +727,12 @@ async function handleProductSubmit(e) {
         const url = `${API_BASE}/products.php`;
         const method = id ? 'PUT' : 'POST';
         
-        if (id) data.id = parseInt(id);
+        if (id) {
+            data.id = parseInt(id);
+            // Preserve existing status when updating - fetch current product status
+            const currentProduct = products.find(p => p.id === parseInt(id));
+            data.status = currentProduct ? currentProduct.status : 'active';
+        }
         
         const response = await fetch(url, {
             method: method,
