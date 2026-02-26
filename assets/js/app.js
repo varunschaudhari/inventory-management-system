@@ -42,9 +42,27 @@ function setupNavigation() {
     const menuToggle = document.getElementById('menuToggle');
     if (menuToggle) {
         menuToggle.addEventListener('click', function() {
-            document.getElementById('sidebar').classList.toggle('active');
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('active');
+            document.body.classList.toggle('sidebar-open', sidebar.classList.contains('active'));
         });
     }
+
+    // Close sidebar when clicking outside (mobile)
+    document.addEventListener('click', function(e) {
+        const sidebar = document.getElementById('sidebar');
+        const menuToggleEl = document.getElementById('menuToggle');
+        if (!sidebar || !sidebar.classList.contains('active')) return;
+
+        const target = e.target;
+        const clickedInsideSidebar = sidebar.contains(target);
+        const clickedMenuToggle = menuToggleEl && menuToggleEl.contains(target);
+
+        if (!clickedInsideSidebar && !clickedMenuToggle) {
+            sidebar.classList.remove('active');
+            document.body.classList.remove('sidebar-open');
+        }
+    }, true);
 }
 
 function navigateToPage(page) {
@@ -100,6 +118,7 @@ function navigateToPage(page) {
 
     // Close sidebar on mobile
     document.getElementById('sidebar').classList.remove('active');
+    document.body.classList.remove('sidebar-open');
 }
 
 // Event Listeners
