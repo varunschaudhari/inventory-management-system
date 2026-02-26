@@ -792,147 +792,166 @@ function displayInvoiceView(invoice) {
         .then(settings => {
             const itemsHtml = invoice.items.map(item => `
                 <tr>
-                    <td class="col-item"><strong>${item.product_name}</strong></td>
-                    <td class="col-description">${item.product_description || '-'}</td>
-                    <td class="col-price">${formatCurrency(item.unit_price)}</td>
-                    <td class="col-qty">${item.quantity}</td>
-                    <td class="col-total"><strong>${formatCurrency(item.total_price)}</strong></td>
+                    <td class="col-item-modern">${item.product_name}</td>
+                    <td class="col-description-modern">${item.product_description || '-'}</td>
+                    <td class="col-price-modern">${formatCurrency(item.unit_price)}</td>
+                    <td class="col-qty-modern">${item.quantity}</td>
+                    <td class="col-total-modern">${formatCurrency(item.total_price)}</td>
                 </tr>
             `).join('');
             
             container.innerHTML = `
-                <div class="invoice-view">
-                    <!-- Header Section -->
-                    <div class="invoice-header-new">
-                        <div class="header-left">
-                            <div class="company-logo">
-                                <div class="logo-placeholder">${(settings.shop_name || 'SHOP').charAt(0).toUpperCase()}</div>
-                                <h1 class="company-name">${settings.shop_name || 'My Shop'}</h1>
-                            </div>
-                            <div class="invoice-meta">
-                                <p><strong>Invoice No:</strong> ${invoice.invoice_number}</p>
-                                <p><strong>Invoice Date:</strong> ${formatDate(invoice.invoice_date)}</p>
-                            </div>
-                        </div>
-                        <div class="header-right">
-                            <div class="contact-blocks">
-                                <div class="contact-block">
-                                    <i class="fas fa-envelope"></i>
-                                    <div>
-                                        <p>${settings.shop_email || 'email@example.com'}</p>
-                                        ${settings.shop_email_secondary ? `<p>${settings.shop_email_secondary}</p>` : ''}
-                                    </div>
+                <div class="invoice-view-modern">
+                    <!-- Modern Header -->
+                    <div class="invoice-header-modern">
+                        <div class="header-main">
+                            <div class="company-brand">
+                                <div class="company-logo-modern">
+                                    <span>${(settings.shop_name || 'My Shop').charAt(0).toUpperCase()}</span>
                                 </div>
-                                <div class="contact-block">
-                                    <i class="fas fa-phone"></i>
-                                    <div>
-                                        <p>${settings.shop_phone || '+91-000-000-0000'}</p>
-                                        <p>Monday to Friday</p>
-                                    </div>
-                                </div>
-                                <div class="contact-block">
-                                    <i class="fas fa-map-marker-alt"></i>
-                                    <div>
-                                        <p>${settings.shop_address || 'Address'}</p>
-                                        <p>${[settings.shop_city, settings.shop_state, settings.shop_pincode].filter(Boolean).join(', ')}</p>
-                                    </div>
+                                <div class="company-info-modern">
+                                    <h1 class="company-name-modern">${settings.shop_name || 'My Shop'}</h1>
+                                    ${settings.shop_address ? `<p class="company-detail">${settings.shop_address}</p>` : ''}
+                                    ${settings.shop_phone ? `<p class="company-detail"><i class="fas fa-phone"></i> ${settings.shop_phone}</p>` : ''}
+                                    ${settings.shop_email ? `<p class="company-detail"><i class="fas fa-envelope"></i> ${settings.shop_email}</p>` : ''}
                                 </div>
                             </div>
-                            <div class="total-parallelogram">
-                                <p class="total-label">Total</p>
-                                <p class="total-amount">${formatCurrency(invoice.total_amount)}</p>
+                            <div class="invoice-header-right">
+                                <div class="invoice-title-modern">
+                                    <h2>INVOICE</h2>
+                                    <div class="invoice-actions-modern">
+                                        <button class="btn-action-modern" onclick="window.print()" title="Print">
+                                            <i class="fas fa-print"></i>
+                                        </button>
+                                        <button class="btn-action-modern" onclick="downloadInvoice()" title="Download PDF">
+                                            <i class="fas fa-download"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="invoice-details-modern">
+                                    <div class="detail-item">
+                                        <span class="detail-label">Invoice Number</span>
+                                        <span class="detail-value">#${invoice.invoice_number}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <span class="detail-label">Invoice Date</span>
+                                        <span class="detail-value">${formatDate(invoice.invoice_date)}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <span class="detail-label">Payment Method</span>
+                                        <span class="detail-value">${invoice.payment_method || 'Cash'}</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                     
-                    <!-- Invoice To Section -->
-                    <div class="invoice-to-section">
-                        <div class="invoice-to-banner">Invoice To</div>
-                        <div class="invoice-to-content">
-                            <div class="invoice-to-left">
-                                <p><strong>Name:</strong> ${invoice.customer_name || 'Walk-in Customer'}</p>
-                                <p><strong>Email:</strong> ${invoice.email || '-'}</p>
+                    <!-- Billing Information -->
+                    <div class="billing-info-modern">
+                        <div class="billing-card bill-to-modern">
+                            <div class="card-header-modern">
+                                <i class="fas fa-user"></i>
+                                <h3>Bill To</h3>
                             </div>
-                            <div class="invoice-to-right">
-                                <p><strong>Phone:</strong> ${invoice.phone || '-'}</p>
-                                <p><strong>Address:</strong> ${invoice.address ? invoice.address + ', ' : ''}${[invoice.city, invoice.state, invoice.pincode].filter(Boolean).join(', ') || '-'}</p>
+                            <div class="card-body-modern">
+                                <p class="billing-name-modern">${invoice.customer_name || 'Walk-in Customer'}</p>
+                                ${invoice.address ? `<p class="billing-text">${invoice.address}</p>` : ''}
+                                ${invoice.phone ? `<p class="billing-text"><i class="fas fa-phone"></i> ${invoice.phone}</p>` : ''}
+                                ${invoice.email ? `<p class="billing-text"><i class="fas fa-envelope"></i> ${invoice.email}</p>` : ''}
+                            </div>
+                        </div>
+                        <div class="billing-card ship-to-modern">
+                            <div class="card-header-modern">
+                                <i class="fas fa-building"></i>
+                                <h3>Ship To</h3>
+                            </div>
+                            <div class="card-body-modern">
+                                <p class="billing-name-modern">${settings.shop_name || 'My Shop'}</p>
+                                ${settings.shop_address ? `<p class="billing-text">${settings.shop_address}</p>` : ''}
+                                ${settings.shop_phone ? `<p class="billing-text"><i class="fas fa-phone"></i> ${settings.shop_phone}</p>` : ''}
+                                ${settings.shop_email ? `<p class="billing-text"><i class="fas fa-envelope"></i> ${settings.shop_email}</p>` : ''}
                             </div>
                         </div>
                     </div>
                     
                     <!-- Items Table -->
-                    <table class="invoice-items-table-new">
-                        <colgroup>
-                            <col class="col-item">
-                            <col class="col-description">
-                            <col class="col-price">
-                            <col class="col-qty">
-                            <col class="col-total">
-                        </colgroup>
-                        <thead>
-                            <tr>
-                                <th class="col-item">Item</th>
-                                <th class="col-description">Description</th>
-                                <th class="col-price">Price</th>
-                                <th class="col-qty">Qty</th>
-                                <th class="col-total">Total</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${itemsHtml}
-                        </tbody>
-                    </table>
+                    <div class="table-container-modern">
+                        <table class="items-table-modern">
+                            <thead>
+                                <tr>
+                                    <th class="col-item-modern">Item</th>
+                                    <th class="col-description-modern">Description</th>
+                                    <th class="col-price-modern">Unit Price</th>
+                                    <th class="col-qty-modern">Quantity</th>
+                                    <th class="col-total-modern">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${itemsHtml}
+                            </tbody>
+                        </table>
+                    </div>
                     
-                    <!-- Bottom Section: Summary and Payment Info -->
-                    <div class="invoice-bottom-section">
-                        <div class="payment-info-section">
-                            <h4>PAYMENT INFO:</h4>
-                            <div class="payment-details">
-                                <p class="payment-customer"><strong>Customer:</strong> ${invoice.customer_name || 'Walk-in Customer'}</p>
-                                <p class="payment-method"><strong>Payment Method:</strong> ${invoice.payment_method || 'Cash'}</p>
-                                <p class="payment-amount"><strong>Amount:</strong> ${formatCurrency(invoice.total_amount)}</p>
+                    <!-- Summary Section -->
+                    <div class="summary-container-modern">
+                        <div class="payment-info-card">
+                            <div class="card-header-modern">
+                                <i class="fas fa-credit-card"></i>
+                                <h3>Payment Information</h3>
+                            </div>
+                            <div class="card-body-modern">
+                                <div class="info-row">
+                                    <span class="info-label">Payment Method</span>
+                                    <span class="info-value">${invoice.payment_method || 'Cash'}</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-label">Total Amount</span>
+                                    <span class="info-value highlight">${formatCurrency(invoice.total_amount)}</span>
+                                </div>
                             </div>
                         </div>
-                        <div class="summary-section">
-                            <table class="summary-table">
+                        <div class="summary-card">
+                            <div class="card-header-modern">
+                                <i class="fas fa-calculator"></i>
+                                <h3>Summary</h3>
+                            </div>
+                            <table class="summary-table-modern">
                                 <tr>
-                                    <td>Subtotal:</td>
-                                    <td>${formatCurrency(invoice.subtotal)}</td>
+                                    <td class="summary-label-modern">Subtotal</td>
+                                    <td class="summary-value-modern">${formatCurrency(invoice.subtotal)}</td>
                                 </tr>
                                 ${invoice.discount > 0 ? `
-                                <tr class="discount-row">
-                                    <td>Discount ${invoice.discount_percent || ''}%:</td>
-                                    <td>-${formatCurrency(invoice.discount)}</td>
+                                <tr class="discount-row-modern">
+                                    <td class="summary-label-modern">Discount (${invoice.discount_percent || ''}%)</td>
+                                    <td class="summary-value-modern discount">-${formatCurrency(invoice.discount)}</td>
                                 </tr>
                                 ` : ''}
                                 ${invoice.tax_rate > 0 ? `
                                 <tr>
-                                    <td>Tax ${invoice.tax_rate}%:</td>
-                                    <td>+${formatCurrency(invoice.tax_amount)}</td>
+                                    <td class="summary-label-modern">Tax (${invoice.tax_rate}%)</td>
+                                    <td class="summary-value-modern">+${formatCurrency(invoice.tax_amount)}</td>
                                 </tr>
-                                ` : '<tr><td>Tax 0%:</td><td>+$0</td></tr>'}
-                                <tr class="grand-total-row">
-                                    <td><strong>Grand Total:</strong></td>
-                                    <td><strong>${formatCurrency(invoice.total_amount)}</strong></td>
+                                ` : ''}
+                                <tr class="grand-total-modern">
+                                    <td class="summary-label-modern">Grand Total</td>
+                                    <td class="summary-value-modern">${formatCurrency(invoice.total_amount)}</td>
                                 </tr>
                             </table>
-                            <div class="amount-in-words">
-                                <p><strong>Amount in Words:</strong> ${numberToWords(invoice.total_amount)}</p>
-                            </div>
                         </div>
                     </div>
                     
-                    <!-- Footer Section -->
-                    <div class="invoice-footer-new">
-                        <div class="footer-left">
-                            <p class="thank-you">Thank you for your business!</p>
-                            <p class="terms">We appreciate your trust and look forward to serving you again.</p>
-                        </div>
-                        <div class="footer-right">
-                            <div class="signature-section">
-                                <p class="signature-label">Authorized Signature</p>
-                                <p class="signature-name">${settings.shop_name || 'Shop Owner'}</p>
+                    <!-- Footer -->
+                    <div class="invoice-footer-modern">
+                        <div class="signature-area">
+                            <div class="signature-box">
+                                <div class="signature-line-modern"></div>
+                                <p class="signature-name-modern">${settings.shop_name || 'Shop Owner'}</p>
+                                <p class="signature-role-modern">Authorized Signature</p>
                             </div>
+                        </div>
+                        <div class="terms-area">
+                            <h4 class="terms-title-modern">Terms & Conditions</h4>
+                            <p class="terms-text-modern">All claims relating to quantity or shipping errors shall be waived by Buyer unless made in writing to Seller within thirty (30) days after delivery of goods to the address stated.</p>
                         </div>
                     </div>
                 </div>

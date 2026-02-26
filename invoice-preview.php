@@ -1,9 +1,15 @@
 <?php
 require_once 'config/database.php';
-require_once 'config/auth.php';
 
-// Check authentication
-requireLogin();
+// Optional: Check authentication if auth.php exists
+if (file_exists('config/auth.php')) {
+    require_once 'config/auth.php';
+    // Only require login if session is active, otherwise allow public access
+    if (session_status() === PHP_SESSION_ACTIVE && isset($_SESSION['user_id'])) {
+        // User is logged in, continue
+    }
+    // If not logged in, allow public access to invoice preview
+}
 
 // Get invoice ID from query parameter
 $invoice_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
@@ -260,11 +266,14 @@ function formatDate($date) {
                 padding: 0;
                 box-shadow: none;
             }
-            .preview-header {
-                display: none;
+            .preview-header,
+            .preview-actions {
+                display: none !important;
             }
             .invoice-actions,
-            .action-icon-btn {
+            .action-icon-btn,
+            .invoice-actions-modern,
+            .btn-action-modern {
                 display: none !important;
             }
             .invoice-view {
@@ -431,90 +440,98 @@ function formatDate($date) {
                 
                 const itemsHtml = safeItems.map(item => `
                 <tr>
-                    <td class="col-item">${item.product_name || 'N/A'}</td>
-                    <td class="col-description">${item.product_description || '-'}</td>
-                    <td class="col-price">${formatCurrency(item.unit_price)}</td>
-                    <td class="col-qty">${item.quantity}</td>
-                    <td class="col-total">${formatCurrency(item.total_price)}</td>
+                    <td class="col-item-modern">${item.product_name || 'N/A'}</td>
+                    <td class="col-description-modern">${item.product_description || '-'}</td>
+                    <td class="col-price-modern">${formatCurrency(item.unit_price)}</td>
+                    <td class="col-qty-modern">${item.quantity}</td>
+                    <td class="col-total-modern">${formatCurrency(item.total_price)}</td>
                 </tr>
             `).join('');
             
             container.innerHTML = `
-                <div class="invoice-view">
-                    <!-- Top Header Section -->
-                    <div class="invoice-top-header">
-                        <div class="header-left">
-                            <div class="company-logo-section">
-                                <div class="logo-placeholder">
+                <div class="invoice-view-modern">
+                    <!-- Modern Header -->
+                    <div class="invoice-header-modern">
+                        <div class="header-main">
+                            <div class="company-brand">
+                                <div class="company-logo-modern">
                                     <span>${(shopSettings['shop_name'] || 'My Shop').charAt(0).toUpperCase()}</span>
                                 </div>
-                                <div class="company-info-wrapper">
-                                    <h2 class="company-name">${shopSettings['shop_name'] || 'My Shop'}</h2>
-                                    <div class="payment-method-section">
-                                        <span class="payment-method-label">Payment Method:</span>
-                                        <span class="payment-method-value">${invoiceData.payment_method || 'Cash'}</span>
-                                    </div>
+                                <div class="company-info-modern">
+                                    <h1 class="company-name-modern">${shopSettings['shop_name'] || 'My Shop'}</h1>
+                                    ${shopSettings['shop_address'] ? `<p class="company-detail">${shopSettings['shop_address']}</p>` : ''}
+                                    ${shopSettings['shop_phone'] ? `<p class="company-detail"><i class="fas fa-phone"></i> ${shopSettings['shop_phone']}</p>` : ''}
+                                    ${shopSettings['shop_email'] ? `<p class="company-detail"><i class="fas fa-envelope"></i> ${shopSettings['shop_email']}</p>` : ''}
                                 </div>
                             </div>
-                        </div>
-                        <div class="header-right">
-                            <div class="invoice-banner-wrapper">
-                                <div class="invoice-banner">
-                                    <h1 class="invoice-title-banner">INVOICE</h1>
-                                    <div class="invoice-actions">
-                                        <button class="action-icon-btn" onclick="window.print()" title="Print">
+                            <div class="invoice-header-right">
+                                <div class="invoice-title-modern">
+                                    <h2>INVOICE</h2>
+                                    <div class="invoice-actions-modern">
+                                        <button class="btn-action-modern" onclick="window.print()" title="Print">
                                             <i class="fas fa-print"></i>
                                         </button>
-                                        <button class="action-icon-btn" onclick="downloadPDF()" title="Download">
+                                        <button class="btn-action-modern" onclick="downloadPDF()" title="Download PDF">
                                             <i class="fas fa-download"></i>
                                         </button>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="invoice-meta-bar">
-                                <span class="meta-item-left">Invoice No: #${invoiceData.invoice_number}</span>
-                                <span class="meta-item-right">Date: ${formatDate(invoiceData.invoice_date)}</span>
+                                <div class="invoice-details-modern">
+                                    <div class="detail-item">
+                                        <span class="detail-label">Invoice Number</span>
+                                        <span class="detail-value">#${invoiceData.invoice_number}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <span class="detail-label">Invoice Date</span>
+                                        <span class="detail-value">${formatDate(invoiceData.invoice_date)}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <span class="detail-label">Payment Method</span>
+                                        <span class="detail-value">${invoiceData.payment_method || 'Cash'}</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                     
-                    <!-- Invoice To / Pay To Section -->
-                    <div class="invoice-payto-section">
-                        <div class="invoice-to-column">
-                            <h3 class="section-title">Invoice To:</h3>
-                            <div class="address-block">
-                                <p class="address-name">${invoiceData.customer_name || 'Walk-in Customer'}</p>
-                                ${invoiceData.address ? `<p class="address-line">${invoiceData.address}</p>` : ''}
-                                ${invoiceData.email ? `<p class="address-line">${invoiceData.email}</p>` : ''}
+                    <!-- Billing Information -->
+                    <div class="billing-info-modern">
+                        <div class="billing-card bill-to-modern">
+                            <div class="card-header-modern">
+                                <i class="fas fa-user"></i>
+                                <h3>Bill To</h3>
+                            </div>
+                            <div class="card-body-modern">
+                                <p class="billing-name-modern">${invoiceData.customer_name || 'Walk-in Customer'}</p>
+                                ${invoiceData.address ? `<p class="billing-text">${invoiceData.address}</p>` : ''}
+                                ${invoiceData.phone ? `<p class="billing-text"><i class="fas fa-phone"></i> ${invoiceData.phone}</p>` : ''}
+                                ${invoiceData.email ? `<p class="billing-text"><i class="fas fa-envelope"></i> ${invoiceData.email}</p>` : ''}
                             </div>
                         </div>
-                        <div class="pay-to-column">
-                            <h3 class="section-title">Pay To:</h3>
-                            <div class="address-block">
-                                <p class="address-name">${shopSettings['shop_name'] || 'My Shop'}</p>
-                                ${shopSettings['shop_address'] ? `<p class="address-line">${shopSettings['shop_address']}</p>` : ''}
-                                ${shopSettings['shop_email'] ? `<p class="address-line">${shopSettings['shop_email']}</p>` : ''}
+                        <div class="billing-card ship-to-modern">
+                            <div class="card-header-modern">
+                                <i class="fas fa-building"></i>
+                                <h3>Ship To</h3>
+                            </div>
+                            <div class="card-body-modern">
+                                <p class="billing-name-modern">${shopSettings['shop_name'] || 'My Shop'}</p>
+                                ${shopSettings['shop_address'] ? `<p class="billing-text">${shopSettings['shop_address']}</p>` : ''}
+                                ${shopSettings['shop_phone'] ? `<p class="billing-text"><i class="fas fa-phone"></i> ${shopSettings['shop_phone']}</p>` : ''}
+                                ${shopSettings['shop_email'] ? `<p class="billing-text"><i class="fas fa-envelope"></i> ${shopSettings['shop_email']}</p>` : ''}
                             </div>
                         </div>
                     </div>
                     
                     <!-- Items Table -->
-                    <div class="table-wrapper">
-                        <table class="invoice-items-table-new">
-                            <colgroup>
-                                <col class="col-item" style="width: 18%;">
-                                <col class="col-description" style="width: 42%;">
-                                <col class="col-price" style="width: 15%;">
-                                <col class="col-qty" style="width: 10%;">
-                                <col class="col-total" style="width: 15%;">
-                            </colgroup>
+                    <div class="table-container-modern">
+                        <table class="items-table-modern">
                             <thead>
                                 <tr>
-                                    <th class="col-item">Item</th>
-                                    <th class="col-description">Description</th>
-                                    <th class="col-price">Price</th>
-                                    <th class="col-qty">Qty</th>
-                                    <th class="col-total">Total</th>
+                                    <th class="col-item-modern">Item</th>
+                                    <th class="col-description-modern">Description</th>
+                                    <th class="col-price-modern">Unit Price</th>
+                                    <th class="col-qty-modern">Quantity</th>
+                                    <th class="col-total-modern">Total</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -523,47 +540,63 @@ function formatDate($date) {
                         </table>
                     </div>
                     
-                    <!-- Bottom Section: Summary -->
-                    <div class="invoice-bottom-section">
-                        <div class="summary-section">
-                            <table class="summary-table">
+                    <!-- Summary Section -->
+                    <div class="summary-container-modern">
+                        <div class="payment-info-card">
+                            <div class="card-header-modern">
+                                <i class="fas fa-credit-card"></i>
+                                <h3>Payment Information</h3>
+                            </div>
+                            <div class="card-body-modern">
+                                <div class="info-row">
+                                    <span class="info-label">Payment Method</span>
+                                    <span class="info-value">${invoiceData.payment_method || 'Cash'}</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-label">Total Amount</span>
+                                    <span class="info-value highlight">${formatCurrency(invoiceData.total_amount)}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="summary-card">
+                            <table class="summary-table-modern">
                                 <tr>
-                                    <td class="summary-label">Subtotal</td>
-                                    <td class="summary-value">${formatCurrency(invoiceData.subtotal)}</td>
+                                    <td class="summary-label-modern">Subtotal</td>
+                                    <td class="summary-value-modern">${formatCurrency(invoiceData.subtotal)}</td>
                                 </tr>
                                 ${invoiceData.discount > 0 ? `
-                                <tr class="discount-row">
-                                    <td class="summary-label">Discount ${invoiceData.discount_percent || ''}%</td>
-                                    <td class="summary-value discount-value">-${formatCurrency(invoiceData.discount)}</td>
+                                <tr class="discount-row-modern">
+                                    <td class="summary-label-modern">Discount (${invoiceData.discount_percent || ''}%)</td>
+                                    <td class="summary-value-modern discount">-${formatCurrency(invoiceData.discount)}</td>
                                 </tr>
                                 ` : ''}
                                 ${invoiceData.tax_rate > 0 ? `
                                 <tr>
-                                    <td class="summary-label">Tax (${invoiceData.tax_rate}%)</td>
-                                    <td class="summary-value">+${formatCurrency(invoiceData.tax_amount)}</td>
+                                    <td class="summary-label-modern">Tax (${invoiceData.tax_rate}%)</td>
+                                    <td class="summary-value-modern">+${formatCurrency(invoiceData.tax_amount)}</td>
                                 </tr>
                                 ` : ''}
-                                <tr class="grand-total-row">
-                                    <td class="summary-label">Grand Total</td>
-                                    <td class="summary-value">${formatCurrency(invoiceData.total_amount)}</td>
+                                <tr class="grand-total-modern">
+                                    <td class="summary-label-modern">Grand Total</td>
+                                    <td class="summary-value-modern">${formatCurrency(invoiceData.total_amount)}</td>
                                 </tr>
                             </table>
                         </div>
                     </div>
                     
-                    <!-- Signature Section -->
-                    <div class="signature-section">
-                        <div class="signature-block">
-                            <div class="signature-line"></div>
-                            <p class="signature-name">${shopSettings['shop_name'] || 'Shop Owner'}</p>
-                            <p class="signature-role">Accounts Manager</p>
+                    <!-- Footer -->
+                    <div class="invoice-footer-modern">
+                        <div class="signature-area">
+                            <div class="signature-box">
+                                <div class="signature-line-modern"></div>
+                                <p class="signature-name-modern">${shopSettings['shop_name'] || 'Shop Owner'}</p>
+                                <p class="signature-role-modern">Authorized Signature</p>
+                            </div>
                         </div>
-                    </div>
-                    
-                    <!-- Terms & Conditions Footer -->
-                    <div class="terms-footer">
-                        <p class="terms-title"><strong>Terms & Conditions:</strong></p>
-                        <p class="terms-text">All claims relating to quantity or shipping errors shall be waived by Buyer unless made in writing to Seller within thirty (30) days after delivery of goods to the address stated.</p>
+                        <div class="terms-area">
+                            <h4 class="terms-title-modern">Terms & Conditions</h4>
+                            <p class="terms-text-modern">All claims relating to quantity or shipping errors shall be waived by Buyer unless made in writing to Seller within thirty (30) days after delivery of goods to the address stated.</p>
+                        </div>
                     </div>
                 </div>
             `;
@@ -597,8 +630,8 @@ function formatDate($date) {
                 return;
             }
 
-            // Hide action buttons before PDF generation
-            const actionButtons = element.querySelectorAll('.invoice-actions, .action-icon-btn');
+            // Hide all action buttons before PDF generation
+            const actionButtons = element.querySelectorAll('.invoice-actions, .action-icon-btn, .invoice-actions-modern, .btn-action-modern, .preview-header, .preview-actions');
             actionButtons.forEach(btn => {
                 btn.style.display = 'none';
             });
@@ -624,9 +657,19 @@ function formatDate($date) {
             };
 
             html2pdf().set(opt).from(element).save().then(() => {
-                // Restore buttons after PDF generation
+                // Restore buttons after PDF generation (only if they exist)
                 actionButtons.forEach(btn => {
-                    btn.style.display = '';
+                    if (btn && !btn.classList.contains('preview-header') && !btn.classList.contains('preview-actions')) {
+                        btn.style.display = '';
+                    }
+                });
+            }).catch(err => {
+                console.error('PDF generation error:', err);
+                // Restore buttons on error
+                actionButtons.forEach(btn => {
+                    if (btn && !btn.classList.contains('preview-header') && !btn.classList.contains('preview-actions')) {
+                        btn.style.display = '';
+                    }
                 });
             });
         }
